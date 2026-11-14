@@ -164,6 +164,8 @@ const QUESTIONS = {
   ]}
 };
 
+let SUBJECTS = [];
+
 SUBJECTS.forEach(s=>{
   if(!Object.keys(QUESTIONS).some(k=>QUESTIONS[k].subjectId===s.id)){
     const id = s.id+'-mock-1';
