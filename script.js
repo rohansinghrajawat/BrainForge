@@ -130,196 +130,7 @@ async function logout(){
 /* ============================================================
    MOCK DATA
    ============================================================ */
-const FACULTY = {
-  sharma:{ name:'Dr. Aarav Sharma', email:'aarav.sharma@brainforge.edu', title:'Associate Professor', dept:'Computer Science', office:'Block A - 210', phone:'+91 98100 12345', bio:'PhD in VLSI Design with 12+ years of teaching experience in digital systems and logic design.' },
-  iyer:{ name:'Prof. Meera Iyer', email:'meera.iyer@brainforge.edu', title:'Assistant Professor', dept:'Software Engineering', office:'Block B - 114', phone:'+91 98100 23456', bio:'Specializes in software architecture, agile practices, and design patterns.' },
-  kapoor:{ name:'Dr. Rohan Kapoor', email:'rohan.kapoor@brainforge.edu', title:'Professor', dept:'Artificial Intelligence', office:'Block C - 301', phone:'+91 98100 34567', bio:'Researcher in applied ML and AI tooling, author of 30+ peer-reviewed papers.' },
-  nair:{ name:'Prof. Sneha Nair', email:'sneha.nair@brainforge.edu', title:'Assistant Professor', dept:'Computer Science', office:'Block A - 122', phone:'+91 98100 45678', bio:'Python educator and competitive programming mentor.' },
-  menon:{ name:'Dr. Kabir Menon', email:'kabir.menon@brainforge.edu', title:'Associate Professor', dept:'Mathematics', office:'Block D - 208', phone:'+91 98100 56789', bio:'Linear algebra and optimization researcher with a passion for clean explanations.' },
-  rao:{ name:'Prof. Tanvi Rao', email:'tanvi.rao@brainforge.edu', title:'Assistant Professor', dept:'Systems', office:'Block B - 210', phone:'+91 98100 67890', bio:'Linux, DevOps and cloud-native infrastructure practitioner.' },
-  joshi:{ name:'Dr. Pooja Joshi', email:'pooja.joshi@brainforge.edu', title:'Professor', dept:'Humanities', office:'Block E - 101', phone:'+91 98100 78901', bio:'Communication skills, technical writing and professional ethics.' },
-  verma:{ name:'Ms. Nisha Verma', email:'nisha.verma@brainforge.edu', title:'Language Instructor', dept:'Language Lab', office:'Block E - 004', phone:'+91 98100 89012', bio:'Language lab coordinator with expertise in English for professional contexts.' }
-};
 
-const SUBJECTS = [
-  { id:'dld', name:'Digital Logic Design', code:'CS201', facultyId:'sharma', progress:68, nextTest:'2025-06-15', credits:4, hue:215,
-    overview:'Digital Logic Design introduces the fundamentals of digital circuits — Boolean algebra, combinational and sequential logic, and the practical design of digital systems.',
-    syllabus:[
-      { module:'Module 1', title:'Number Systems & Boolean Algebra', topics:['Binary, octal, hexadecimal','Boolean laws & identities','Canonical & standard forms','Karnaugh map simplification'] },
-      { module:'Module 2', title:'Combinational Circuits', topics:['Half & full adders','Multiplexers & demultiplexers','Decoders & encoders','Comparators'] },
-      { module:'Module 3', title:'Sequential Circuits', topics:['SR, JK, D & T flip-flops','Registers','Synchronous & asynchronous counters','State machines'] },
-      { module:'Module 4', title:'Memory & Programmable Logic', topics:['ROM & RAM','PLA & PAL','Introduction to FPGA','Memory addressing'] }
-    ],
-    notes:[
-      { title:'Unit 1 — Boolean Algebra & K-Maps', type:'PDF', size:'2.4 MB', pages:42, updated:'2 days ago' },
-      { title:'Unit 2 — Combinational Logic Design', type:'PDF', size:'3.1 MB', pages:56, updated:'5 days ago' },
-      { title:'Unit 3 — Flip-Flops & Counters', type:'PDF', size:'1.9 MB', pages:38, updated:'1 week ago' },
-      { title:'Problem Set — Karnaugh Maps', type:'PDF', size:'0.8 MB', pages:18, updated:'3 days ago' },
-      { title:'Formula Sheet — Full Semester', type:'PDF', size:'0.4 MB', pages:6, updated:'2 weeks ago' }
-    ],
-    lectures:[
-      { title:'Introduction to Digital Systems', duration:'48:12', date:'Jun 01', watched:true },
-      { title:'Boolean Algebra Essentials', duration:'52:40', date:'Jun 03', watched:true },
-      { title:'Karnaugh Map Simplification', duration:'41:05', date:'Jun 05', watched:true },
-      { title:'Adders & Subtractors', duration:'37:18', date:'Jun 07', watched:false },
-      { title:'Multiplexers and Decoders', duration:'44:52', date:'Jun 09', watched:false },
-      { title:'Flip-Flops Deep Dive', duration:'55:22', date:'Jun 11', watched:false }
-    ],
-    attendance:{ present:43, total:50, history:[
-      {date:'Jun 02',status:'present'},{date:'Jun 04',status:'present'},{date:'Jun 06',status:'absent'},{date:'Jun 09',status:'present'},{date:'Jun 11',status:'present'},{date:'Jun 13',status:'late'},{date:'Jun 16',status:'present'},{date:'Jun 18',status:'present'},{date:'Jun 20',status:'present'},{date:'Jun 23',status:'absent'},{date:'Jun 25',status:'present'},{date:'Jun 27',status:'present'}
-    ]}
-  },
-  { id:'sdd', name:'Software Design and Development', code:'CS202', facultyId:'iyer', progress:54, nextTest:'2025-06-18', credits:4, hue:245,
-    overview:'Software Design and Development covers the software lifecycle, design patterns, architecture, testing and modern development practices.',
-    syllabus:[
-      { module:'Module 1', title:'Software Lifecycle & Requirements', topics:['SDLC models','Requirement elicitation','User stories & use cases','SRS documents'] },
-      { module:'Module 2', title:'Design Principles & Patterns', topics:['SOLID principles','Creational, structural, behavioral patterns','UML diagrams'] },
-      { module:'Module 3', title:'Architecture & Testing', topics:['Layered architecture','Microservices','Unit & integration testing','TDD'] },
-      { module:'Module 4', title:'Version Control & DevOps', topics:['Git workflows','CI/CD pipelines','Code review practices'] }
-    ],
-    notes:[
-      { title:'Unit 1 — Requirements Engineering', type:'PDF', size:'2.0 MB', pages:34, updated:'4 days ago' },
-      { title:'Unit 2 — Design Patterns Catalog', type:'PDF', size:'3.4 MB', pages:60, updated:'6 days ago' },
-      { title:'Unit 3 — Testing Strategies', type:'PDF', size:'1.6 MB', pages:28, updated:'1 week ago' }
-    ],
-    lectures:[
-      { title:'SDLC Models Overview', duration:'46:10', date:'Jun 02', watched:true },
-      { title:'SOLID Principles in Practice', duration:'51:05', date:'Jun 05', watched:true },
-      { title:'Design Patterns Introduction', duration:'49:30', date:'Jun 08', watched:false },
-      { title:'Testing Pyramid Explained', duration:'38:22', date:'Jun 12', watched:false }
-    ],
-    attendance:{ present:38, total:46, history:[
-      {date:'Jun 03',status:'present'},{date:'Jun 05',status:'present'},{date:'Jun 07',status:'present'},{date:'Jun 10',status:'absent'},{date:'Jun 12',status:'present'},{date:'Jun 14',status:'present'},{date:'Jun 17',status:'late'},{date:'Jun 19',status:'present'}
-    ]}
-  },
-  { id:'ai', name:'AI Landscape and Tools', code:'CS203', facultyId:'kapoor', progress:72, nextTest:'2025-06-20', credits:3, hue:280,
-    overview:'A survey of modern artificial intelligence — core concepts, practical tools, and hands-on workflows with large language models and ML pipelines.',
-    syllabus:[
-      { module:'Module 1', title:'Foundations of AI', topics:['History of AI','Search & problem solving','Knowledge representation'] },
-      { module:'Module 2', title:'Machine Learning Basics', topics:['Supervised learning','Unsupervised learning','Model evaluation'] },
-      { module:'Module 3', title:'Modern AI Tools', topics:['LLM APIs','Prompt engineering','Vector databases','RAG'] },
-      { module:'Module 4', title:'Applied AI Ethics', topics:['Bias & fairness','Privacy','Responsible deployment'] }
-    ],
-    notes:[
-      { title:'Unit 1 — AI Foundations', type:'PDF', size:'2.2 MB', pages:40, updated:'1 day ago' },
-      { title:'Unit 2 — ML Crash Course', type:'PDF', size:'3.0 MB', pages:52, updated:'3 days ago' },
-      { title:'LLM Toolchain Cheat Sheet', type:'PDF', size:'0.6 MB', pages:8, updated:'2 days ago' }
-    ],
-    lectures:[
-      { title:'What is AI? A Modern Tour', duration:'44:00', date:'Jun 01', watched:true },
-      { title:'Supervised Learning Intuition', duration:'50:12', date:'Jun 04', watched:true },
-      { title:'Prompting Patterns that Work', duration:'38:44', date:'Jun 06', watched:true },
-      { title:'Building a RAG Pipeline', duration:'52:18', date:'Jun 10', watched:false }
-    ],
-    attendance:{ present:36, total:42, history:[
-      {date:'Jun 02',status:'present'},{date:'Jun 04',status:'present'},{date:'Jun 06',status:'present'},{date:'Jun 09',status:'present'},{date:'Jun 11',status:'absent'},{date:'Jun 13',status:'present'},{date:'Jun 16',status:'present'}
-    ]}
-  },
-  { id:'py', name:'Python Programming and Problem Solving', code:'CS204', facultyId:'nair', progress:81, nextTest:'2025-06-12', credits:4, hue:150,
-    overview:'Hands-on Python programming with a problem-solving mindset — data structures, algorithms, and clean idiomatic code.',
-    syllabus:[
-      { module:'Module 1', title:'Python Fundamentals', topics:['Syntax & data types','Control flow','Functions','Modules'] },
-      { module:'Module 2', title:'Data Structures', topics:['Lists, tuples, dicts, sets','Comprehensions','Iterators & generators'] },
-      { module:'Module 3', title:'Problem Solving Patterns', topics:['Two pointers','Sliding window','Recursion','Dynamic programming basics'] },
-      { module:'Module 4', title:'Pythonic Engineering', topics:['OOP in Python','Testing with pytest','Type hints','Project structure'] }
-    ],
-    notes:[
-      { title:'Python Syntax Quick Reference', type:'PDF', size:'1.2 MB', pages:24, updated:'1 day ago' },
-      { title:'Data Structures Deep Dive', type:'PDF', size:'2.6 MB', pages:48, updated:'4 days ago' },
-      { title:'150 Practice Problems', type:'PDF', size:'1.8 MB', pages:62, updated:'1 week ago' }
-    ],
-    lectures:[
-      { title:'Python Setup & First Programs', duration:'35:20', date:'Jun 02', watched:true },
-      { title:'Lists, Tuples & Comprehensions', duration:'47:15', date:'Jun 05', watched:true },
-      { title:'Recursion Made Easy', duration:'42:30', date:'Jun 08', watched:true },
-      { title:'Dynamic Programming Basics', duration:'54:00', date:'Jun 11', watched:false }
-    ],
-    attendance:{ present:47, total:50, history:[
-      {date:'Jun 02',status:'present'},{date:'Jun 04',status:'present'},{date:'Jun 06',status:'present'},{date:'Jun 09',status:'present'},{date:'Jun 11',status:'present'},{date:'Jun 13',status:'present'},{date:'Jun 16',status:'late'},{date:'Jun 18',status:'present'}
-    ]}
-  },
-  { id:'la', name:'Linear Algebra', code:'MA201', facultyId:'menon', progress:60, nextTest:'2025-06-16', credits:4, hue:20,
-    overview:'Vectors, matrices, linear transformations, eigenvalues and their applications to computing and data science.',
-    syllabus:[
-      { module:'Module 1', title:'Vector Spaces', topics:['Vectors','Linear independence','Basis & dimension'] },
-      { module:'Module 2', title:'Matrices & Transformations', topics:['Matrix operations','Determinants','Inverse','Rank'] },
-      { module:'Module 3', title:'Eigenvalues & Eigenvectors', topics:['Characteristic polynomials','Diagonalization','Spectral theorem'] },
-      { module:'Module 4', title:'Applications', topics:['SVD','PCA','Least squares'] }
-    ],
-    notes:[
-      { title:'Unit 1 — Vector Spaces', type:'PDF', size:'1.9 MB', pages:36, updated:'2 days ago' },
-      { title:'Unit 2 — Matrix Algebra', type:'PDF', size:'2.4 MB', pages:44, updated:'5 days ago' },
-      { title:'Eigenvalue Problems Solved', type:'PDF', size:'1.1 MB', pages:22, updated:'4 days ago' }
-    ],
-    lectures:[
-      { title:'Vectors from Scratch', duration:'40:12', date:'Jun 01', watched:true },
-      { title:'Matrices as Transformations', duration:'45:30', date:'Jun 04', watched:true },
-      { title:'Determinants Intuition', duration:'36:48', date:'Jun 07', watched:false },
-      { title:'Eigenvalues Explained', duration:'48:15', date:'Jun 10', watched:false }
-    ],
-    attendance:{ present:34, total:44, history:[
-      {date:'Jun 03',status:'present'},{date:'Jun 05',status:'absent'},{date:'Jun 07',status:'present'},{date:'Jun 10',status:'present'},{date:'Jun 12',status:'present'},{date:'Jun 14',status:'absent'},{date:'Jun 17',status:'present'}
-    ]}
-  },
-  { id:'ld', name:'Linux and DevOps', code:'CS205', facultyId:'rao', progress:45, nextTest:'2025-06-22', credits:3, hue:190,
-    overview:'Master the Linux command line and modern DevOps tooling — shell scripting, containers, and CI/CD workflows.',
-    syllabus:[
-      { module:'Module 1', title:'Linux Fundamentals', topics:['Filesystem & permissions','Processes','Package managers','Networking basics'] },
-      { module:'Module 2', title:'Shell Scripting', topics:['Bash basics','Loops & conditionals','Text processing tools'] },
-      { module:'Module 3', title:'Containers & Orchestration', topics:['Docker basics','Docker Compose','Kubernetes overview'] },
-      { module:'Module 4', title:'CI/CD Pipelines', topics:['GitOps','GitHub Actions','Deployment strategies'] }
-    ],
-    notes:[
-      { title:'Linux Command Cheat Sheet', type:'PDF', size:'0.9 MB', pages:16, updated:'3 days ago' },
-      { title:'Docker Essentials', type:'PDF', size:'2.1 MB', pages:38, updated:'6 days ago' }
-    ],
-    lectures:[
-      { title:'Linux Filesystem Tour', duration:'39:22', date:'Jun 02', watched:true },
-      { title:'Permissions & Users', duration:'43:00', date:'Jun 05', watched:false },
-      { title:'Docker in 40 Minutes', duration:'41:15', date:'Jun 09', watched:false }
-    ],
-    attendance:{ present:26, total:40, history:[
-      {date:'Jun 03',status:'present'},{date:'Jun 06',status:'absent'},{date:'Jun 08',status:'present'},{date:'Jun 11',status:'absent'},{date:'Jun 13',status:'present'},{date:'Jun 15',status:'present'}
-    ]}
-  },
-  { id:'sp', name:'Semester Proficiency', code:'UC101', facultyId:'joshi', progress:90, nextTest:'2025-06-25', credits:2, hue:340,
-    overview:'A holistic program that ties together core subjects with communication, ethics, and professional skills.',
-    syllabus:[
-      { module:'Module 1', title:'Communication Skills', topics:['Technical writing','Presentation skills','Email etiquette'] },
-      { module:'Module 2', title:'Professional Ethics', topics:['Academic integrity','Workplace ethics','Case discussions'] },
-      { module:'Module 3', title:'Interview Preparation', topics:['DSA revision','Project storytelling','HR rounds'] }
-    ],
-    notes:[
-      { title:'Interview Preparation Guide', type:'PDF', size:'1.4 MB', pages:28, updated:'2 days ago' },
-      { title:'Technical Writing Templates', type:'PDF', size:'0.7 MB', pages:14, updated:'1 week ago' }
-    ],
-    lectures:[
-      { title:'Communicating Under Pressure', duration:'37:00', date:'Jun 03', watched:true },
-      { title:'Storytelling for Interviews', duration:'42:18', date:'Jun 07', watched:true }
-    ],
-    attendance:{ present:22, total:24, history:[
-      {date:'Jun 04',status:'present'},{date:'Jun 08',status:'present'},{date:'Jun 11',status:'present'},{date:'Jun 15',status:'present'}
-    ]}
-  },
-  { id:'ll', name:'Language Lab', code:'UC102', facultyId:'verma', progress:35, nextTest:'2025-06-28', credits:1, hue:120,
-    overview:'Practical language lab sessions for English fluency, pronunciation, and professional communication.',
-    syllabus:[
-      { module:'Module 1', title:'Pronunciation & Listening', topics:['Phonetics','Listening exercises','Accent neutralisation'] },
-      { module:'Module 2', title:'Group Discussions', topics:['Structure of GD','Speaking strategies','Practice sessions'] },
-      { module:'Module 3', title:'Presentations', topics:['Designing slides','Delivery','Q&A handling'] }
-    ],
-    notes:[
-      { title:'Pronunciation Practice Guide', type:'PDF', size:'0.6 MB', pages:12, updated:'4 days ago' }
-    ],
-    lectures:[
-      { title:'English Sounds Overview', duration:'34:00', date:'Jun 05', watched:true },
-      { title:'Group Discussion Practice', duration:'40:00', date:'Jun 09', watched:false }
-    ],
-    attendance:{ present:12, total:20, history:[
-      {date:'Jun 06',status:'present'},{date:'Jun 10',status:'absent'},{date:'Jun 13',status:'present'},{date:'Jun 17',status:'present'}
-    ]}
-  }
-];
 
 const QUESTIONS = {
   'dld-mock-1':{ subjectId:'dld', title:'Mock Test 1 — Digital Logic Fundamentals', duration:30, questions:[
@@ -898,18 +709,29 @@ function statCard(icon, label, value, sub, tone){
   '</div>';
 }
 
+
+  
+
 function subjectCard(s){
+  // 1. Fallbacks for fields not yet in the database
+  const progress = s.progress || 50; 
+  const hue = s.hue || 215; // Default blue color
+  const nextTest = s.next_test || s.nextTest; // Database uses next_test
+
+  // 2. Get faculty safely
   const fac = getFaculty(s.facultyId);
-  const hue = s.hue;
+  const facultyName = fac ? fac.name : 'Unassigned';
+
   const bgIcon = 'hsl('+hue+', 85%, 94%)';
   const fgIcon = 'hsl('+hue+', 70%, 40%)';
+
   return '<a href="#/subject/'+s.id+'" class="subject-card">'+
-    '<div class="subj-top"><div class="subj-icon" style="background:'+bgIcon+';color:'+fgIcon+'">'+initials(s.name)+'</div><span class="badge badge-neutral">'+s.code+'</span></div>'+
+    '<div class="subj-top"><div class="subj-icon" style="background:'+bgIcon+';color:'+fgIcon+'">'+initials(s.name)+'</div><span class="badge badge-neutral">'+(s.code || 'N/A')+'</span></div>'+
     '<h3>'+esc(s.name)+'</h3>'+
-    '<div class="faculty">'+I.profile+' '+esc(fac.name)+'</div>'+
-    '<div class="meta"><span>Progress</span><span style="font-weight:700;color:var(--text)">'+s.progress+'%</span></div>'+
-    '<div class="progress"><div class="progress-fill" style="width:'+s.progress+'%"></div></div>'+
-    '<div class="meta" style="margin-top:14px;margin-bottom:0"><span>Next test</span><span>'+fmtDate(s.nextTest)+'</span></div>'+
+    '<div class="faculty">'+I.profile+' '+esc(facultyName)+'</div>'+
+    '<div class="meta"><span>Progress</span><span style="font-weight:700;color:var(--text)">'+progress+'%</span></div>'+
+    '<div class="progress"><div class="progress-fill" style="width:'+progress+'%"></div></div>'+
+    '<div class="meta" style="margin-top:14px;margin-bottom:0"><span>Next test</span><span>'+(nextTest ? fmtDate(nextTest) : 'TBA')+'</span></div>'+
     '<div class="actions"><span class="btn btn-ghost btn-sm">Open '+I.arrowRight+'</span></div>'+
   '</a>';
 }
@@ -1796,9 +1618,16 @@ async function boot(){
   }
 
   try {
+    // 1. Check if user is logged in
     state.user = await getSession();
     
-    // ADD THIS IF-STATEMENT:
+    // 2. Fetch the real data from Supabase (using the function in auth.js)
+    const appData = await fetchAppData();
+    FACULTY = appData.faculty;
+    SUBJECTS = appData.subjects;
+    render();
+    
+    // 3. Listen for auth changes
     if (typeof onAuthChange === 'function') {
       onAuthChange((event, user) => {
         state.user = user;
@@ -1814,10 +1643,11 @@ async function boot(){
       });
     }
   } catch (e) {
-    console.error("Auth failed to load:", e);
+    console.error("App failed to load:", e);
     state.user = null;
   }
 
+  // 4. Render the page with the new data
   route();
 }
 
