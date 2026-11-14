@@ -2,10 +2,9 @@
    AUTH — Supabase-backed
    ============================================================ */
 
-const SUPABASE_URL      = 'https://jmnxxbxgrmxdncowhuct.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_VUoRbrcQl1S7ukzqcb7rdg_gCHBmrKW';
+   const SUPABASE_URL = window.BRAINFORGE_CONFIG.SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.BRAINFORGE_CONFIG.SUPABASE_ANON_KEY;
 
-// We use 'db' instead of 'supabase' to avoid conflicts with the CDN script
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* Normalize the raw Supabase user into the shape the app expects:
