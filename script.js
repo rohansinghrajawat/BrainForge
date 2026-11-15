@@ -1538,22 +1538,34 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-  // 4. Existing Topic Toggle (Syllabus Checkbox)
+    // 4. Topic Toggle (Syllabus Checkbox)
   const topicEl = e.target.closest('[data-topic-toggle]');
   if (topicEl) {
     const topicId = topicEl.dataset.topicId;
     const isCompleted = topicEl.dataset.completed === 'true';
     
-    topicEl.style.opacity = '0.5';
+    // Optimistic UI update (instant visual feedback)
+    const checkIcon = topicEl.querySelector('span:first-child');
+    const textLabel = topicEl.querySelector('span:last-child');
     
+    if (isCompleted) {
+      checkIcon.style.color = 'var(--border-strong)';
+      textLabel.style.textDecoration = 'none';
+      textLabel.style.opacity = '1';
+    } else {
+      checkIcon.style.color = 'var(--secondary)';
+      textLabel.style.textDecoration = 'line-through';
+      textLabel.style.opacity = '0.6';
+    }
+
     try {
       await toggleTopicProgress(topicId, isCompleted);
       const appData = await fetchAppData();
       SUBJECTS = appData.subjects;
-      render();
+      render(); // Refresh data to update the overall progress bar
     } catch (err) {
       toast(err.message, 'error');
-      topicEl.style.opacity = '1';
+      render(); // Revert UI if the database fails
     }
     return;
   }

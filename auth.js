@@ -284,13 +284,18 @@ async function fetchAppData() {
 // Add this new function at the bottom of auth.js
 async function toggleTopicProgress(topicId, currentlyCompleted) {
   if (currentlyCompleted) {
+    // If it's already checked, remove it from the database
     const { error } = await db.from('student_progress')
       .delete()
       .match({ student_id: state.user.id, topic_id: topicId });
     if (error) throw error;
   } else {
+    // If checking it, use upsert to prevent "duplicate key" crashes if double-clicked
     const { error } = await db.from('student_progress')
-      .insert({ student_id: state.user.id, topic_id: topicId });
+      .upsert(
+        { student_id: state.user.id, topic_id: topicId },
+        { onConflict: 'student_id,topic_id', ignoreDuplicates: true }
+      );
     if (error) throw error;
   }
 }
