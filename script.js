@@ -166,6 +166,7 @@ const QUESTIONS = {
 
 let SUBJECTS = [];
 let FACULTY = {};
+let ADMIN_STUDENTS = [];
 
 SUBJECTS.forEach(s=>{
   if(!Object.keys(QUESTIONS).some(k=>QUESTIONS[k].subjectId===s.id)){
@@ -887,26 +888,44 @@ function subjectSyllabus(s){
 }
 
 function subjectNotes(s){
+  if (!s.notes || s.notes.length === 0) return '<div class="card">'+emptyState(I.note, 'No notes yet', 'No notes uploaded for this subject.')+'</div>';
+  
   return '<div class="card"><div class="row-between mb-3"><h3 class="h3" style="font-size:1.05rem">Lecture Notes · '+s.notes.length+'</h3></div>'+
-    s.notes.map(n=>'<div class="list-item"><div class="li-icon">PDF</div><div class="li-info"><div class="t">'+esc(n.title)+'</div><div class="s">'+n.pages+' pages · '+n.size+' · Updated '+n.updated+'</div></div><div class="li-actions"><button class="btn btn-ghost btn-sm" data-view>'+I.eye+' View</button><button class="btn btn-ghost btn-sm" data-download>'+I.download+'</button></div></div>').join('')+
+    s.notes.map(n=>'<div class="list-item"><div class="li-icon">PDF</div><div class="li-info"><div class="t">'+esc(n.title)+'</div><div class="s">'+n.pages+' pages · '+n.size+' · Updated '+n.updated+'</div></div><div class="li-actions"><a href="'+esc(n.file_url||'#')+'" target="_blank" class="btn btn-ghost btn-sm">'+I.eye+' View</a></div></div>').join('')+
   '</div>';
+}
+
+
+function getYouTubeId(url) {
+  if (!url) return null;
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})/);
+  return match ? match[1] : null;
 }
 
 function subjectLectures(s){
+  if (!s.lectures || s.lectures.length === 0) {
+    return '<div class="card">'+emptyState(I.video, 'No lectures yet', 'Your faculty hasn\'t uploaded any lectures for this subject.')+'</div>';
+  }
+
   const current = s.lectures[0];
+  const ytId = getYouTubeId(current.video_url);
+  
+  const videoHtml = ytId 
+    ? `<iframe width="100%" height="100%" style="aspect-ratio:16/9;border:none;" src="https://www.youtube.com/embed/${ytId}?autoplay=0" allowfullscreen></iframe>`
+    : `<div class="video-frame" style="border-radius:0"><div class="play">${I.play}</div><div class="strip"><div class="bar"></div><span class="tiny" style="color:#fff;opacity:.85">Video player (demo)</span></div></div>`;
+
   return '<div class="grid-2" style="grid-template-columns:1.4fr 1fr;gap:20px">'+
     '<div class="card card-flat" style="padding:0;overflow:hidden">'+
-      '<div class="video-frame" style="border-radius:0"><div class="play">'+I.play+'</div><div class="strip"><div class="bar"></div><span class="tiny" style="color:#fff;opacity:.85">Video player (demo)</span></div></div>'+
-      '<div style="padding:18px"><h3 class="h3" style="font-size:1.05rem">'+esc(current.title)+'</h3><div class="tiny muted mt-1">'+current.duration+' · '+current.date+' · '+esc(s.name)+'</div>'+
-        '<div class="row mt-3" style="gap:8px"><button class="btn btn-primary btn-sm" data-play>'+I.play+' Play</button><button class="btn btn-ghost btn-sm" data-mark-watched>'+I.check+' Mark watched</button></div>'+
+      '<div style="background:#000; width:100%;">'+videoHtml+'</div>'+
+      '<div style="padding:18px"><h3 class="h3" style="font-size:1.05rem">'+esc(current.title)+'</h3><div class="tiny muted mt-1">'+esc(current.duration||'')+' · '+esc(current.date||'')+' · '+esc(s.name)+'</div>'+
+        '<div class="row mt-3" style="gap:8px"><a href="'+esc(current.video_url||'#')+'" target="_blank" class="btn btn-ghost btn-sm">'+I.play+' Open in YouTube</a></div>'+
       '</div>'+
     '</div>'+
     '<div class="card"><h3 class="h3" style="font-size:1.05rem;margin-bottom:14px">All lectures</h3>'+
-      s.lectures.map(l=>'<div class="list-item" style="margin-bottom:8px;padding:10px"><div class="li-icon '+(l.watched?'green':'')+'" style="width:34px;height:34px">'+I.play+'</div><div class="li-info"><div class="t small">'+esc(l.title)+'</div><div class="s">'+l.duration+' · '+l.date+'</div></div>'+(l.watched?'<span class="badge badge-green">'+I.check+'</span>':'')+'</div>').join('')+
+      s.lectures.map((l, idx)=>'<div class="list-item" style="margin-bottom:8px;padding:10px; '+(idx===0?'border:1px solid var(--primary);':'')+'"><div class="li-icon '+(l.watched?'green':'')+'" style="width:34px;height:34px">'+I.play+'</div><div class="li-info"><div class="t small">'+esc(l.title)+'</div><div class="s">'+esc(l.duration||'')+' · '+esc(l.date||'')+'</div></div></div>').join('')+
     '</div>'+
   '</div>';
 }
-
 function subjectTests(s){
   const tests = Object.entries(QUESTIONS).filter(([id,q])=>q.subjectId===s.id);
   const results = getResults();
@@ -1344,7 +1363,7 @@ function renderAdmin(parts){
 function adminOverview(){
   return '<div class="page-head"><div><h1>Admin overview</h1><p class="sub">A quick look at the BrainForge platform.</p></div><button class="btn btn-primary btn-sm" data-new-announcement>'+I.megaphone+' New announcement</button></div>'+
     '<div class="admin-grid">'+
-      '<div class="admin-stat"><div class="head"><div class="ico">'+I.users+'</div><div class="small muted">Total students</div></div><div class="v">248</div><div class="l">+12 this week</div></div>'+
+      '<div class="admin-stat"><div class="head"><div class="ico">'+I.users+'</div><div class="small muted">Total students</div></div><div class="v"> '+ (ADMIN_STUDENTS.length || 248) +'</div><div class="l">+12 this week</div></div>'+
       '<div class="admin-stat"><div class="head"><div class="ico green">'+I.profile+'</div><div class="small muted">Faculty</div></div><div class="v">18</div><div class="l">Across 5 departments</div></div>'+
       '<div class="admin-stat"><div class="head"><div class="ico">'+I.book+'</div><div class="small muted">Active subjects</div></div><div class="v">'+SUBJECTS.length+'</div><div class="l">This semester</div></div>'+
       '<div class="admin-stat"><div class="head"><div class="ico green">'+I.test+'</div><div class="small muted">Mock tests</div></div><div class="v">'+totalTests()+'</div><div class="l">Across all subjects</div></div>'+
@@ -1358,16 +1377,22 @@ function adminOverview(){
 }
 
 function adminStudents(){
-  return '<div class="page-head"><div><h1>Students</h1><p class="sub">Manage enrolled students.</p></div><button class="btn btn-primary btn-sm" data-add-student>'+I.plus+' Add student</button></div>'+
-    '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Email</th><th>Year</th><th>Batch</th><th>Attendance</th><th>Status</th><th></th></tr></thead><tbody>'+
-      STUDENTS.map(s=>'<tr><td><div class="row" style="gap:9px"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;border-radius:8px">'+initials(s.name)+'</div>'+esc(s.name)+'</div></td><td class="muted">'+esc(s.email)+'</td><td>'+esc(s.year)+'</td><td>'+esc(s.batch)+'</td><td>'+s.attendance+'%</td><td><span class="badge '+(s.status==='active'?'badge-green':'badge-amber')+'">'+s.status+'</span></td><td><button class="btn btn-ghost btn-sm" data-edit>'+I.edit+'</button></td></tr>').join('')+
+  const list = ADMIN_STUDENTS.length ? ADMIN_STUDENTS : STUDENTS;
+  return '<div class="page-head"><div><h1>Students</h1><p class="sub">Manage enrolled students.</p></div></div>'+
+    '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
+      list.map(s=>'<tr><td><div class="row" style="gap:9px"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;border-radius:8px">'+initials(s.name)+'</div>'+esc(s.name)+'</div></td><td class="muted">'+esc(s.email)+'</td><td><span class="badge badge-green">Active</span></td>'+
+      '<td><div class="row" style="gap:5px"><button class="btn btn-ghost btn-sm" style="color:var(--red-500)" onclick="deleteStudent(\''+s.id+'\', \''+esc(s.name)+'\')">'+I.trash+'</button></div></td></tr>').join('')+
     '</tbody></table></div>';
 }
 
 function adminFaculty(){
   return '<div class="page-head"><div><h1>Faculty</h1><p class="sub">Faculty members across departments.</p></div><button class="btn btn-primary btn-sm" data-add-faculty>'+I.plus+' Add faculty</button></div>'+
-    '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Department</th><th>Email</th><th>Office</th></tr></thead><tbody>'+
-      Object.values(FACULTY).map(f=>'<tr><td><div class="row" style="gap:9px"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;border-radius:8px">'+initials(f.name)+'</div>'+esc(f.name)+'</div></td><td>'+esc(f.dept)+'</td><td class="muted">'+esc(f.email)+'</td><td>'+esc(f.office)+'</td></tr>').join('')+
+    '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Department</th><th>Email</th><th>Actions</th></tr></thead><tbody>'+
+      Object.values(FACULTY).map(f=>'<tr><td><div class="row" style="gap:9px"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;border-radius:8px">'+initials(f.name)+'</div>'+esc(f.name)+'</div></td><td>'+esc(f.dept||'')+'</td><td class="muted">'+esc(f.email||'')+'</td>'+
+      '<td><div class="row" style="gap:5px">'+
+        '<button class="btn btn-ghost btn-sm" onclick="editFaculty(\''+f.id+'\')">'+I.edit+'</button>'+
+        '<button class="btn btn-ghost btn-sm" style="color:var(--red-500)" onclick="deleteFaculty(\''+f.id+'\', \''+esc(f.name)+'\')">'+I.trash+'</button>'+
+      '</div></td></tr>').join('')+
     '</tbody></table></div>';
 }
 
@@ -1381,8 +1406,8 @@ function adminSubjects(){
 function adminContent(){
   return '<div class="page-head"><div><h1>Content</h1><p class="sub">Manage notes and lectures.</p></div></div>'+
     '<div class="grid-2">'+
-      '<div class="card"><h3 class="h3" style="font-size:1rem;margin-bottom:14px">Notes library</h3>'+SUBJECTS.slice(0,4).map(s=>'<div class="row-between" style="padding:10px 0;border-bottom:1px solid var(--border)"><div><div class="small" style="font-weight:600">'+esc(s.name)+'</div><div class="tiny muted">'+s.notes.length+' notes</div></div><button class="btn btn-ghost btn-sm" data-upload>'+I.plus+' Upload</button></div>').join('')+'</div>'+
-      '<div class="card"><h3 class="h3" style="font-size:1rem;margin-bottom:14px">Lectures library</h3>'+SUBJECTS.slice(0,4).map(s=>'<div class="row-between" style="padding:10px 0;border-bottom:1px solid var(--border)"><div><div class="small" style="font-weight:600">'+esc(s.name)+'</div><div class="tiny muted">'+s.lectures.length+' lectures</div></div><button class="btn btn-ghost btn-sm" data-upload>'+I.plus+' Upload</button></div>').join('')+'</div>'+
+      '<div class="card"><h3 class="h3" style="font-size:1rem;margin-bottom:14px">Notes library</h3>'+SUBJECTS.slice(0,4).map(s=>'<div class="row-between" style="padding:10px 0;border-bottom:1px solid var(--border)"><div><div class="small" style="font-weight:600">'+esc(s.name)+'</div><div class="tiny muted">'+s.notes.length+' notes</div></div><button class="btn btn-ghost btn-sm" data-upload="note">'+I.plus+' Upload</button></div>').join('')+'</div>'+
+      '<div class="card"><h3 class="h3" style="font-size:1rem;margin-bottom:14px">Lectures library</h3>'+SUBJECTS.slice(0,4).map(s=>'<div class="row-between" style="padding:10px 0;border-bottom:1px solid var(--border)"><div><div class="small" style="font-weight:600">'+esc(s.name)+'</div><div class="tiny muted">'+s.lectures.length+' lectures</div></div><button class="btn btn-ghost btn-sm" data-upload="lecture">'+I.plus+' Upload</button></div>').join('')+'</div>'+
     '</div>';
 }
 
@@ -1482,6 +1507,17 @@ function initGlobalHandlers(){
 
 
   document.addEventListener('click', async (e) => {
+     if (e.target.closest('[data-add-faculty]')) openAddFaculty();
+  if (e.target.closest('[data-add-subject]')) openAddSubject();
+  
+  // NEW: Handle uploads properly without the native alert
+  const uploadBtn = e.target.closest('[data-upload]');
+  if (uploadBtn) {
+    const type = uploadBtn.getAttribute('data-upload');
+    if (type === 'lecture') openAddLecture();
+    if (type === 'note') openAddNote();
+  }
+
   const topicEl = e.target.closest('[data-topic-toggle]');
   if (topicEl) {
     const topicId = topicEl.dataset.topicId;
@@ -1689,11 +1725,16 @@ async function boot(){
   try {
     state.user = await getSession();
 
-    if (state.user) {
-      const appData = await fetchAppData();
-      FACULTY  = appData.faculty;
-      SUBJECTS = appData.subjects;
+       const appData = await fetchAppData();
+    FACULTY = appData.faculty;
+    SUBJECTS = appData.subjects;
+    
+    // Fetch admin students if the logged-in user is an admin
+    if (state.user && state.user.role === 'admin' && typeof fetchAdminStudents === 'function') {
+      ADMIN_STUDENTS = await fetchAdminStudents();
     }
+
+    
   } catch (e) {
     console.error('App failed to load:', e);
     toast('Could not load data. Please refresh.', 'error');
@@ -1731,3 +1772,263 @@ if(document.readyState === 'loading'){
 } else {
   boot();
 }
+
+async function refreshAppData() {
+  try {
+    const appData = await fetchAppData();
+    FACULTY = appData.faculty;
+    SUBJECTS = appData.subjects;
+    if (state.user && state.user.role === 'admin' && typeof fetchAdminStudents === 'function') {
+      ADMIN_STUDENTS = await fetchAdminStudents();
+    }
+    render();
+    toast('Data refreshed successfully.', 'success');
+  } catch (err) {
+    toast('Failed to refresh data.', 'error');
+  }
+}
+
+
+// Add this function to open the Faculty Modal
+function openAddFaculty() {
+  showModal('<div class="modal"><h3>Add New Faculty</h3>'+
+    '<div class="field"><label>Faculty ID (e.g., f-101)</label><input class="input" id="fId" placeholder="f-101"></div>'+
+    '<div class="field"><label>Full Name</label><input class="input" id="fName" placeholder="Dr. John Doe"></div>'+
+    '<div class="field"><label>Department</label><input class="input" id="fDept" placeholder="Computer Science"></div>'+
+    '<div class="field"><label>Email</label><input class="input" id="fEmail" type="email" placeholder="john@brainforge.edu"></div>'+
+    '<div class="field"><label>Office</label><input class="input" id="fOffice" placeholder="Room 404"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="saveFacultyBtn">Save Faculty</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+  $('#saveFacultyBtn').onclick = async () => {
+    const id = $('#fId').value.trim();
+    const name = $('#fName').value.trim();
+    if(!id || !name) return toast('ID and Name are required', 'error');
+    
+    try {
+      const { error } = await db.from('faculty').insert({
+        id: id, name: name, dept: $('#fDept').value.trim(), email: $('#fEmail').value.trim(), office: $('#fOffice').value.trim()
+      });
+      if (error) throw error;
+      closeModal();
+      toast('Faculty added!');
+      refreshAppData();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+}
+
+// Add this function to open the Subject Modal
+function openAddSubject() {
+  const facOptions = Object.values(FACULTY).map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  
+  showModal('<div class="modal"><h3>Add New Subject</h3>'+
+    '<div class="field"><label>Subject ID (e.g., cs101)</label><input class="input" id="sId" placeholder="cs101"></div>'+
+    '<div class="field"><label>Subject Name</label><input class="input" id="sName" placeholder="Intro to Programming"></div>'+
+    '<div class="field"><label>Subject Code (e.g., CS101)</label><input class="input" id="sCode" placeholder="CS101"></div>'+
+    '<div class="field"><label>Assign Faculty</label><select class="input" id="sFaculty">'+facOptions+'</select></div>'+
+    '<div class="field"><label>Credits</label><input class="input" id="sCredits" type="number" value="3"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="saveSubjectBtn">Save Subject</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+  $('#saveSubjectBtn').onclick = async () => {
+    const id = $('#sId').value.trim();
+    const name = $('#sName').value.trim();
+    if(!id || !name) return toast('ID and Name are required', 'error');
+    
+    try {
+      const { error } = await db.from('subjects').insert({
+        id: id, 
+        name: name, 
+        code: $('#sCode').value.trim(), 
+        faculty_id: $('#sFaculty').value, 
+        credits: parseInt($('#sCredits').value) || 3,
+        hue: Math.floor(Math.random() * 360) // Random color for the UI icon
+      });
+      if (error) throw error;
+      closeModal();
+      toast('Subject added!');
+      refreshAppData();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+}
+
+function openAddLecture() {
+  console.log("Modal is opening!")
+  const subjOptions = Object.values(SUBJECTS).map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  showModal('<div class="modal"><h3>Add YouTube Lecture</h3>'+
+    '<div class="field"><label>Subject</label><select class="input" id="lSubj">'+subjOptions+'</select></div>'+
+    '<div class="field"><label>Lecture Title</label><input class="input" id="lTitle" placeholder="K-Map Simplification"></div>'+
+    '<div class="field"><label>YouTube Video URL</label><input class="input" id="lUrl" placeholder="https://youtube.com/watch?v=..."></div>'+
+    '<div class="field"><label>Duration (e.g., 45:00)</label><input class="input" id="lDur" placeholder="45:00"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="saveLectureBtn">Save Lecture</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+    // Inside openAddLecture():
+  $('#saveLectureBtn').onclick = async () => {
+    console.log("Button was clicked to save!");
+    try {
+      await dbAddLecture({
+        subject_id: $('#lSubj').value, title: $('#lTitle').value.trim(), video_url: $('#lUrl').value.trim(), duration: $('#lDur').value.trim(), date: 'Just now'
+      });
+      closeModal(); toast('Lecture added!'); refreshAppData();
+    } catch (err) { toast(err.message, 'error'); }
+  };
+
+  // Inside openAddNote():
+  $('#saveNoteBtn').onclick = async () => {
+    try {
+      await dbAddNote({
+        subject_id: $('#nSubj').value, title: $('#nTitle').value.trim(), file_url: $('#nUrl').value.trim(), pages: parseInt($('#nPages').value), size: '1.2 MB', updated: 'Just now'
+      });
+      closeModal(); toast('Note added!'); refreshAppData();
+    } catch (err) { toast(err.message, 'error'); }
+  };
+}
+
+function openAddNote() {
+  const subjOptions = Object.values(SUBJECTS).map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  
+  showModal('<div class="modal"><h3>Add PDF Note</h3>'+
+    '<div class="field"><label>Subject</label><select class="input" id="nSubj">'+subjOptions+'</select></div>'+
+    '<div class="field"><label>Note Title</label><input class="input" id="nTitle" placeholder="Unit 1 Notes"></div>'+
+    '<div class="field"><label>PDF URL (Google Drive, Dropbox, etc.)</label><input class="input" id="nUrl" placeholder="https://drive.google.com/..."></div>'+
+    '<div class="field"><label>Pages</label><input class="input" id="nPages" type="number" value="10"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="saveNoteBtn">Save Note</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+  
+  $('#saveNoteBtn').onclick = async () => {
+    const subjectId = $('#nSubj').value;
+    const title = $('#nTitle').value.trim();
+    const url = $('#nUrl').value.trim();
+    const pagesInput = $('#nPages').value;
+    
+    console.log("Save Note Button Clicked!", { subjectId, title, url, pagesInput });
+
+    if (!title || !url) {
+      return toast('Title and PDF URL are required', 'error');
+    }
+
+    const payload = {
+      subject_id: subjectId, 
+      title: title, 
+      file_url: url, 
+      pages: parseInt(pagesInput) || 1, // Fallback to 1 if empty
+      size: '1.2 MB', 
+      updated: 'Just now'
+    };
+
+    try {
+      await dbAddNote(payload);
+      closeModal(); 
+      toast('Note added successfully!'); 
+      await refreshAppData();
+    } catch (err) { 
+      console.error("SUPABASE NOTE ERROR:", err);
+      toast(err.message || 'Failed to save note', 'error'); 
+    }
+  };
+}
+function openAddFaculty() {
+  showModal('<div class="modal"><h3>Add New Faculty</h3>'+
+    '<div class="field"><label>Faculty ID (e.g., f-101)</label><input class="input" id="fId" placeholder="f-101"></div>'+
+    '<div class="field"><label>Full Name</label><input class="input" id="fName" placeholder="Dr. John Doe"></div>'+
+    '<div class="field"><label>Department</label><input class="input" id="fDept" placeholder="Computer Science"></div>'+
+    '<div class="field"><label>Email</label><input class="input" id="fEmail" type="email" placeholder="john@brainforge.edu"></div>'+
+    '<div class="field"><label>Office</label><input class="input" id="fOffice" placeholder="Room 404"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="saveFacultyBtn">Save Faculty</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+  $('#saveFacultyBtn').onclick = async () => {
+    const id = $('#fId').value.trim();
+    const name = $('#fName').value.trim();
+    if(!id || !name) return toast('ID and Name are required', 'error');
+    
+    try {
+      await dbAddFaculty({
+        id: id, name: name, dept: $('#fDept').value.trim(), email: $('#fEmail').value.trim(), office: $('#fOffice').value.trim()
+      });
+      closeModal();
+      toast('Faculty added!');
+      await refreshAppData(); // Wait for refresh to finish
+    } catch (err) {
+      console.error("Faculty Insert Error:", err);
+      toast(err.message || 'Failed to add faculty', 'error');
+    }
+  };
+}
+
+function openAddSubject() {
+  const facOptions = Object.values(FACULTY).map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  
+  showModal('<div class="modal"><h3>Add New Subject</h3>'+
+    '<div class="field"><label>Subject ID (e.g., cs101)</label><input class="input" id="sId" placeholder="cs101"></div>'+
+    '<div class="field"><label>Subject Name</label><input class="input" id="sName" placeholder="Intro to Programming"></div>'+
+    '<div class="field"><label>Subject Code (e.g., CS101)</label><input class="input" id="sCode" placeholder="CS101"></div>'+
+    '<div class="field"><label>Assign Faculty</label><select class="input" id="sFaculty">'+facOptions+'</select></div>'+
+    '<div class="field"><label>Credits</label><input class="input" id="sCredits" type="number" value="3"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="saveSubjectBtn">Save Subject</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+  $('#saveSubjectBtn').onclick = async () => {
+    const id = $('#sId').value.trim();
+    const name = $('#sName').value.trim();
+    if(!id || !name) return toast('ID and Name are required', 'error');
+    
+    try {
+      await dbAddSubject({
+        id: id, name: name, code: $('#sCode').value.trim(), faculty_id: $('#sFaculty').value, 
+        credits: parseInt($('#sCredits').value) || 3, hue: Math.floor(Math.random() * 360)
+      });
+      closeModal();
+      toast('Subject added!');
+      await refreshAppData(); // Wait for refresh to finish
+    } catch (err) {
+      console.error("Subject Insert Error:", err);
+      toast(err.message || 'Failed to add subject', 'error');
+    }
+  };
+}
+
+window.deleteFaculty = function(id, name) {
+  confirmModal('Delete Faculty?', 'Are you sure you want to permanently remove ' + name + '?', async () => {
+    try {
+      await dbDeleteFaculty(id);
+      toast('Faculty deleted.'); refreshAppData();
+    } catch (err) { toast(err.message, 'error'); }
+  }, true);
+};
+
+window.deleteStudent = function(id, name) {
+  confirmModal('Delete Student?', 'Are you sure you want to permanently remove ' + name + '? This cannot be undone.', async () => {
+    try {
+      await dbDeleteStudent(id);
+      toast('Student deleted.'); refreshAppData();
+    } catch (err) { toast(err.message, 'error'); }
+  }, true);
+};
+
+window.editFaculty = function(id) {
+  const f = FACULTY[id];
+  if (!f) return;
+  showModal('<div class="modal"><h3>Edit Faculty</h3>'+
+    '<div class="field"><label>Full Name</label><input class="input" id="efName" value="'+esc(f.name)+'"></div>'+
+    '<div class="field"><label>Department</label><input class="input" id="efDept" value="'+esc(f.dept||'')+'"></div>'+
+    '<div class="field"><label>Email</label><input class="input" id="efEmail" type="email" value="'+esc(f.email||'')+'"></div>'+
+    '<div class="field"><label>Office</label><input class="input" id="efOffice" value="'+esc(f.office||'')+'"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="updateFacultyBtn">Update</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+  $('#updateFacultyBtn').onclick = async () => {
+    try {
+      await dbUpdateFaculty(id, {
+        name: $('#efName').value.trim(), dept: $('#efDept').value.trim(), email: $('#efEmail').value.trim(), office: $('#efOffice').value.trim()
+      });
+      closeModal(); toast('Faculty updated!'); refreshAppData();
+    } catch (err) { toast(err.message, 'error'); }
+  };
+};

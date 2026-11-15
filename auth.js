@@ -38,7 +38,24 @@ async function signUp({ name, email, password }) {
 async function signIn({ email, password }) {
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error) throw error;
-  return normalizeUser(data.user);
+  
+  const user = normalizeUser(data.user);
+  
+  try {
+    const { data: profile, error: profileErr } = await db.from('profiles').select('role, email').eq('id', user.id).single();
+    
+    console.log("PROFILE FETCHED DURING LOGIN:", profile); // <--- ADD THIS
+    if (profileErr) console.error("PROFILE FETCH ERROR:", profileErr); // <--- ADD THIS
+
+    if (profile) {
+      user.role = profile.role === 'admin' ? 'admin' : 'student';
+      if (profile.email) user.email = profile.email;
+    }
+  } catch (e) {
+    console.warn("Could not fetch profile role", e);
+  }
+  
+  return user;
 }
 
 /* --- Admin sign-in: reject non-admins --- */
@@ -60,7 +77,8 @@ async function signOut() {
 /* --- Restore session on page load --- */
 async function getSession() {
   const { data } = await db.auth.getSession();
-  return normalizeUser(data.session?.user);
+  if (!data.session?.user) return null;
+  return await getFullUser(data.session.user); // Now fetches the real role!
 }
 
 /* --- Password reset email --- */
@@ -79,10 +97,12 @@ async function updatePassword(newPassword) {
 
 /* --- Subscribe to auth state changes --- */
 function onAuthChange(cb) {
-  db.auth.onAuthStateChange((event, session) => {
-    cb(event, normalizeUser(session?.user));
+  db.auth.onAuthStateChange(async (event, session) => {
+    const user = await getFullUser(session?.user); // Also fetches the real role!
+    cb(event, user);
   });
 }
+
 
 /* --- Turn Supabase errors into friendly strings --- */
 function friendlyError(err) {
@@ -245,6 +265,12 @@ async function fetchAppData() {
     };
   });
 
+      let adminStudents = [];
+  if (state.user && state.user.role === 'admin') {
+    adminStudents = await fetchAdminStudents();
+  }
+  return { faculty, subjects, adminStudents };
+
   return { faculty, subjects };
 }
 
@@ -260,4 +286,72 @@ async function toggleTopicProgress(topicId, currentlyCompleted) {
       .insert({ student_id: state.user.id, topic_id: topicId });
     if (error) throw error;
   }
+}
+
+
+async function fetchAdminStudents() {
+  const { data, error } = await db
+    .from('profiles')
+    .select('*')
+    .eq('role', 'student'); // Only get students, not admins
+    
+  if (error) throw error;
+  
+  // Format them to match what the UI expects
+  return (data || []).map(s => ({
+    id: s.id,
+    name: s.name || s.email.split('@')[0], // fallback if name is missing
+    email: s.email,
+    year: 'N/A', // Your profiles table doesn't have these yet
+    batch: 'N/A',
+    attendance: 0, // Hardcoded for now
+    status: 'active'
+  }));
+}
+
+async function dbAddFaculty(data) {
+  const { error } = await db.from('faculty').insert(data);
+  if (error) throw error;
+}
+
+async function dbAddSubject(data) {
+  const { error } = await db.from('subjects').insert(data);
+  if (error) throw error;
+}
+
+async function dbAddLecture(data) {
+  console.log("sending to supabase!");
+  const { error } = await db.from('lectures').insert(data);
+  if (error) throw error;
+}
+
+async function dbAddNote(data) {
+  console.log("Notes sent to supabase");
+  const { error } = await db.from('notes').insert(data);
+  if (error) throw error;
+}
+
+async function getFullUser(sbUser) {
+  if (!sbUser) return null;
+  const user = normalizeUser(sbUser);
+  try {
+    const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single();
+    if (profile) {
+      user.role = profile.role === 'admin' ? 'admin' : 'student';
+    }
+  } catch (e) { /* Ignore profile fetch errors */ }
+  return user;
+}
+
+async function dbDeleteFaculty(id) {
+  const { error } = await db.from('faculty').delete().eq('id', id);
+  if (error) throw error;
+}
+async function dbUpdateFaculty(id, data) {
+  const { error } = await db.from('faculty').update(data).eq('id', id);
+  if (error) throw error;
+}
+async function dbDeleteStudent(id) {
+  const { error } = await db.from('profiles').delete().eq('id', id);
+  if (error) throw error;
 }
