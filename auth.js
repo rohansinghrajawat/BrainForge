@@ -97,3 +97,73 @@ function friendlyError(err) {
   if (m.includes('network'))                         return 'Network error. Check your connection.';
   return msg;
 }
+
+/* --- Data layer: subjects + faculty --- */
+
+async function fetchFaculty() {
+  const { data, error } = await db.from('faculty').select('*');
+  if (error) throw error;
+  const map = {};
+  (data || []).forEach(f => {
+    map[f.id] = { ...f, facultyId: f.id };
+  });
+  return map;
+}
+
+async function fetchSubjects() {
+  const { data, error } = await db.from('subjects').select('*');
+  if (error) throw error;
+
+  return (data || []).map(s => ({
+    ...s,
+    facultyId:  s.faculty_id,        // map snake_case → camelCase the UI expects
+    nextTest:   s.next_test,
+    hue:        s.hue        ?? 215,
+    credits:    s.credits    ?? 0,
+    progress:   s.progress   ?? 0,   // not in DB yet — safe default
+    syllabus:   s.syllabus   ?? [],  // not in DB yet
+    lectures:   s.lectures   ?? [],
+    notes:      s.notes      ?? [],
+    attendance: s.attendance ?? { present: 0, total: 0, history: [] },
+  }));
+}
+
+async function loadAppData() {
+  const [faculty, subjects] = await Promise.all([
+    fetchFaculty(),
+    fetchSubjects(),
+  ]);
+  FACULTY  = faculty;    // assigns to script.js globals
+  SUBJECTS = subjects;
+}
+
+
+/* --- Data layer --- */
+
+async function fetchAppData() {
+  const [facRes, subRes] = await Promise.all([
+    db.from('faculty').select('*'),
+    db.from('subjects').select('*'),
+  ]);
+
+  if (facRes.error) throw facRes.error;
+  if (subRes.error) throw subRes.error;
+
+  const faculty = {};
+  (facRes.data || []).forEach(f => { faculty[f.id] = { ...f, facultyId: f.id }; });
+
+  const subjects = (subRes.data || []).map(s => ({
+    ...s,
+    facultyId:  s.faculty_id,
+    nextTest:   s.next_test,
+    hue:        s.hue        ?? 215,
+    credits:    s.credits    ?? 0,
+    progress:   s.progress   ?? 0,
+    syllabus:   s.syllabus   ?? [],
+    lectures:   s.lectures   ?? [],
+    notes:      s.notes      ?? [],
+    attendance: s.attendance ?? { present: 0, total: 0, history: [] },
+  }));
+
+  return { faculty, subjects };
+}

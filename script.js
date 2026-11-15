@@ -1,6 +1,6 @@
-/* ============================================================
-   ICONS
-   ============================================================ */
+/*    ICONS   */
+
+
 const I = {
   logo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 9.2 8 10 4.6-.8 8-5 8-10V6l-8-4z"/><path d="m9 12 2 2 4-4"/></svg>',
   dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
@@ -50,9 +50,9 @@ const I = {
   trending:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg>'
 };
 
-/* ============================================================
+/* 
    UTILITIES
-   ============================================================ */
+    */
 const $  = (s, c=document) => c.querySelector(s);
 const $$ = (s, c=document) => [...c.querySelectorAll(s)];
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -91,9 +91,9 @@ function confirmModal(title, body, onConfirm, danger){
   $('[data-confirm]').onclick = ()=>{ closeModal(); onConfirm(); };
 }
 
-/* ============================================================
+/* 
    STATE
-   ============================================================ */
+    */
 const KEYS = { theme:'bf_theme' };
 
 const state = {
@@ -127,9 +127,9 @@ async function logout(){
   location.hash = '#/';
 }
 
-/* ============================================================
+/* 
    MOCK DATA
-   ============================================================ */
+    */
 
 
 const QUESTIONS = {
@@ -165,6 +165,7 @@ const QUESTIONS = {
 };
 
 let SUBJECTS = [];
+let FACULTY = {};
 
 SUBJECTS.forEach(s=>{
   if(!Object.keys(QUESTIONS).some(k=>QUESTIONS[k].subjectId===s.id)){
@@ -214,9 +215,12 @@ function calcOverallAttendance(){
   SUBJECTS.forEach(s=>{ p+=s.attendance.present; t+=s.attendance.total; });
   return pct(p,t);
 }
+
 function avgProgress(){
-  return Math.round(SUBJECTS.reduce((a,s)=>a+s.progress,0)/SUBJECTS.length);
+  if (!SUBJECTS.length) return 0;
+  return Math.round(SUBJECTS.reduce((a,s)=>a+(s.progress||0),0) / SUBJECTS.length);
 }
+
 function totalTests(){ return Object.keys(QUESTIONS).length; }
 
 function getResults(){ return safeParse(localStorage.getItem('bf_results')) || {}; }
@@ -225,9 +229,9 @@ function saveResult(testId, result){
   localStorage.setItem('bf_results', JSON.stringify(r));
 }
 
-/* ============================================================
+/* 
    LANDING
-   ============================================================ */
+    */
 function renderLanding(){
   return landingNav() + '<main>'+heroSection()+featureSection('lectures')+featureSection('notes')+featureSection('syllabus')+featureSection('tests')+featureSection('analysis')+featureSection('doubts')+finalCTA()+'</main>' + landingFooter();
 }
@@ -249,7 +253,7 @@ function heroSection(){
   return '<section class="hero"><div class="container"><div class="hero-grid">'+
     '<div class="reveal">'+
       '<span class="eyebrow">Trusted academic learning platform</span>'+
-      '<h1 class="h1">A calmer way to <span class="grad">learn, practise, and excel</span>.</h1>'+
+      '<h1 class="h1">A calmer way to <span class="grad">learn, practice, and excel</span>.</h1>'+
       '<p class="lead">BrainForge brings your lectures, notes, syllabus, mock tests, attendance and doubts into one clean workspace — so you can focus on what actually moves your grade.</p>'+
       '<div class="hero-cta"><a href="#/signup" class="btn btn-primary btn-lg">'+I.arrowRight+' Get started free</a><a href="#/login" class="btn btn-ghost btn-lg">'+I.play+' Sign in</a></div>'+
       '<div class="hero-stats"><div class="hero-stat"><div class="num">8</div><div class="lbl">Subjects covered</div></div><div class="hero-stat"><div class="num">2k+</div><div class="lbl">Practice questions</div></div><div class="hero-stat"><div class="num">94%</div><div class="lbl">Student satisfaction</div></div></div>'+
@@ -388,9 +392,9 @@ function landingFooter(){
   '</div></footer>';
 }
 
-/* ============================================================
+/* 
    AUTH
-   ============================================================ */
+    */
 function renderAuth(page){
   const isAdminPage = page === 'admin-login';
   const isSignup = page === 'signup';
@@ -528,9 +532,9 @@ async function initAuthForm(page){
     }
   });
 }
-/* ============================================================
+/* 
    RESET PASSWORD
-   ============================================================ */
+    */
 function renderResetPassword(){
   return '<div class="auth-wrap" style="grid-template-columns:1fr"><main class="auth-main"><div class="auth-box">'+
     '<a href="#/" class="back">'+I.arrowLeft+' Back to home</a>'+
@@ -659,9 +663,9 @@ function navItemAdmin(path, label, active, icon){
   return '<a href="#/'+path+'" class="nav-item '+(active===path?'active':'')+'">'+icon+'<span>'+label+'</span></a>';
 }
 
-/* ============================================================
+/* 
    STUDENT PAGES
-   ============================================================ */
+    */
 function renderStudent(parts){
   const page = parts[0] || 'dashboard';
   switch(page){
@@ -721,7 +725,7 @@ function subjectCard(s){
   const nextTest = s.next_test || s.nextTest; // Database uses next_test
 
   // 2. Get faculty safely
-  const fac = getFaculty(s.facultyId);
+  const fac = getFaculty(s.faculty_id || s.facultyId);
   const facultyName = fac ? fac.name : 'Unassigned';
 
   const bgIcon = 'hsl('+hue+', 85%, 94%)';
@@ -802,7 +806,7 @@ function emptyState(icon, title, text, cta, ctaLabel){
 function pageSubject(subjectId){
   const s = getSubject(subjectId);
   if(!s) return emptyState(I.info,'Subject not found','The subject you are looking for does not exist.','#/dashboard','Back to dashboard');
-  const fac = getFaculty(s.facultyId);
+  const fac = getFaculty(s.faculty_id || s.facultyId);
   const hue = s.hue;
   const tab = (new URLSearchParams((location.hash.split('?')[1]||''))).get('tab') || 'overview';
   const tabs = ['overview','faculty','syllabus','notes','lectures','tests','attendance'];
@@ -818,7 +822,7 @@ function pageSubject(subjectId){
 }
 
 function renderSubjectTab(s, tab){
-  const fac = getFaculty(s.facultyId);
+  const fac = getFaculty(s.faculty_id || s.facultyId);
   switch(tab){
     case 'faculty': return subjectFaculty(fac);
     case 'syllabus': return subjectSyllabus(s);
@@ -1013,9 +1017,9 @@ function pageSettings(){
     '</div>';
 }
 
-/* ============================================================
+/* 
    TEST FLOW
-   ============================================================ */
+    */
 function pageTest(testId){
   const q = QUESTIONS[testId];
   if(!q) return '<div class="content">'+emptyState(I.info,'Test not found','This test could not be found.','#/mock-tests','Back to mock tests')+'</div>';
@@ -1214,9 +1218,9 @@ function startTestTimer(testId){
   }, 1000);
 }
 
-/* ============================================================
+/* 
    ANALYSIS
-   ============================================================ */
+    */
 function pageAnalysis(testId){
   const results = getResults();
   const r = results[testId];
@@ -1277,9 +1281,9 @@ function pageAnalysis(testId){
     '</div>';
 }
 
-/* ============================================================
+/* 
    ADMIN
-   ============================================================ */
+    */
 function renderAdmin(parts){
   const sub = parts[1] || '';
   const active = sub ? 'admin/'+sub : 'admin';
@@ -1389,9 +1393,9 @@ function adminAnalytics(){
     '</div>';
 }
 
-/* ============================================================
+/* 
    EVENT WIRING
-   ============================================================ */
+    */
 function initGlobalHandlers(){
   // Theme toggles
   $$('[data-theme-toggle]').forEach(btn=>{
@@ -1531,9 +1535,9 @@ function initGlobalHandlers(){
   }
 }
 
-/* ============================================================
+/* 
    ROUTER
-   ============================================================ */
+    */
 function render(){ route(); }
 
 function route(){
@@ -1609,9 +1613,9 @@ function route(){
   initGlobalHandlers();
 }
 
-/* ============================================================
+/* 
    BOOT
-   ============================================================ */
+    */
 window.addEventListener('hashchange', route);
 
 async function boot(){
@@ -1620,37 +1624,43 @@ async function boot(){
   }
 
   try {
-    // 1. Check if user is logged in
     state.user = await getSession();
-    
-    // 2. Fetch the real data from Supabase (using the function in auth.js)
-    const appData = await fetchAppData();
-    FACULTY = appData.faculty;
-    SUBJECTS = appData.subjects;
-    render();
-    
-    // 3. Listen for auth changes
-    if (typeof onAuthChange === 'function') {
-      onAuthChange((event, user) => {
-        state.user = user;
-        if (event === 'SIGNED_OUT'){
-          const page = location.hash.slice(1).split('/')[0];
-          const protectedPages = [
-            'dashboard','lectures','notes','syllabus','mock-tests',
-            'test-analysis','doubts','attendance','profile','settings',
-            'subject','test','analysis','admin'
-          ];
-          if (protectedPages.includes(page)) location.hash = '#/login';
-        }
-      });
+
+    if (state.user) {
+      const appData = await fetchAppData();
+      FACULTY  = appData.faculty;
+      SUBJECTS = appData.subjects;
     }
   } catch (e) {
-    console.error("App failed to load:", e);
-    state.user = null;
+    console.error('App failed to load:', e);
+    toast('Could not load data. Please refresh.', 'error');
+    // NOTE: do NOT null out state.user here
   }
 
-  // 4. Render the page with the new data
-  route();
+  route();  // single render pass
+
+  if (typeof onAuthChange === 'function') {
+    onAuthChange((event, user) => {
+      state.user = user;
+      if (event === 'SIGNED_OUT'){
+        const page = location.hash.slice(1).split('/')[0];
+        const protectedPages = [
+          'dashboard','lectures','notes','syllabus','mock-tests',
+          'test-analysis','doubts','attendance','profile','settings',
+          'subject','test','analysis','admin'
+        ];
+        if (protectedPages.includes(page)) location.hash = '#/login';
+      }
+      if (event === 'SIGNED_IN' && user) {
+        // Pull data after sign-in so first dashboard render isn't empty
+        fetchAppData().then(d => {
+          FACULTY  = d.faculty;
+          SUBJECTS = d.subjects;
+          route();
+        }).catch(err => console.error('Post-sign-in fetch failed:', err));
+      }
+    });
+  }
 }
 
 if(document.readyState === 'loading'){
