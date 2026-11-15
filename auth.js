@@ -141,29 +141,82 @@ async function loadAppData() {
 /* --- Data layer --- */
 
 async function fetchAppData() {
-  const [facRes, subRes] = await Promise.all([
-    db.from('faculty').select('*'),
-    db.from('subjects').select('*'),
-  ]);
+  // 1. Fetch Faculty
+  const { data: facData, error: facErr } = await db.from('faculty').select('*');
+  if (facErr) throw facErr;
 
-  if (facRes.error) throw facRes.error;
-  if (subRes.error) throw subRes.error;
+  // 2. Fetch Subjects with Deep Joins (Lectures, Notes, Syllabus)
+  const { data: subData, error: subErr } = await db.from('subjects').select(`
+    *,
+    lectures (*),
+    notes (*),
+    syllabus_modules ( *, syllabus_topics (*) )
+  `);
+  if (subErr) throw subErr;
 
+  // 3. Fetch Mock Tests from DB
+  const { data: testData, error: testErr } = await db.from('mock_tests').select('*');
+  if (testErr) throw testErr;
+
+  console.log("TESTS FROM DB:", testData); 
+
+  // 4. Fetch Attendance for the logged-in user
+  let attData = [];
+  if (state.user) {
+    const { data: att, error: attErr } = await db
+      .from('attendance')
+      .select('*')
+      .eq('student_id', state.user.id);
+    if (!attErr) attData = att || [];
+  }
+
+  // --- MAP DATA TO MATCH SCRIPT.JS EXPECTATIONS ---
+  
   const faculty = {};
-  (facRes.data || []).forEach(f => { faculty[f.id] = { ...f, facultyId: f.id }; });
+  (facData || []).forEach(f => { faculty[f.id] = { ...f, facultyId: f.id }; });
 
-  const subjects = (subRes.data || []).map(s => ({
-    ...s,
-    facultyId:  s.faculty_id,
-    nextTest:   s.next_test,
-    hue:        s.hue        ?? 215,
-    credits:    s.credits    ?? 0,
-    progress:   s.progress   ?? 0,
-    syllabus:   s.syllabus   ?? [],
-    lectures:   s.lectures   ?? [],
-    notes:      s.notes      ?? [],
-    attendance: s.attendance ?? { present: 0, total: 0, history: [] },
-  }));
+  // Inject DB tests into the global QUESTIONS object so the UI picks them up
+  if (typeof QUESTIONS !== 'undefined' && testData) {
+    testData.forEach(t => {
+      QUESTIONS[t.id] = {
+        subjectId: t.subject_id,
+        title: t.title,
+        duration: t.duration,
+        questions: typeof t.questions === 'string' ? JSON.parse(t.questions) : t.questions
+      };
+    });
+  }
+
+  const subjects = (subData || []).map(s => {
+    // Map Attendance
+    const subjAtt = attData.filter(a => a.subject_id === s.id);
+    const presentCount = subjAtt.filter(a => a.status === 'present').length;
+    const totalCount = subjAtt.length;
+    const history = subjAtt
+      .sort((a,b) => new Date(b.date) - new Date(a.date))
+      .map(a => ({ date: a.date, status: a.status }));
+
+    // Map Syllabus
+    const syllabus = (s.syllabus_modules || [])
+      .sort((a,b) => a.order_index - b.order_index)
+      .map(m => ({
+        title: m.title,
+        topics: (m.syllabus_topics || []).sort((a,b) => a.order_index - b.order_index).map(t => t.title)
+      }));
+
+    return {
+      ...s,
+      facultyId: s.faculty_id,      // snake_case to camelCase
+      nextTest:  s.next_test,
+      hue:       s.hue ?? 215,
+      credits:   s.credits ?? 0,
+      progress:  s.progress ?? 0,   // (we'll calculate real progress later)
+      syllabus:  syllabus,
+      lectures:  (s.lectures || []).map(l => ({ ...l, watched: false })), // default false
+      notes:     s.notes || [],
+      attendance: { present: presentCount, total: totalCount, history: history }
+    };
+  });
 
   return { faculty, subjects };
 }
