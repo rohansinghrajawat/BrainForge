@@ -161,9 +161,11 @@ async function loadAppData() {
 /* --- Data layer --- */
 
 async function fetchAppData() {
+  // 1. Fetch Faculty
   const { data: facData, error: facErr } = await db.from('faculty').select('*');
   if (facErr) throw facErr;
 
+  // 2. Fetch Subjects (with lectures, notes, syllabus)
   const { data: subData, error: subErr } = await db.from('subjects').select(`
     *,
     lectures (*),
@@ -172,46 +174,59 @@ async function fetchAppData() {
   `);
   if (subErr) throw subErr;
 
+  // 3. Fetch Mock Tests
   const { data: testData } = await db.from('mock_tests').select('*');
-  
+
+  // 4. Fetch Attendance and Progress
   let attData = [];
   let progData = [];
   
-   // Fetch Test Results from DB and sync to LocalStorage
   if (state.user) {
-    const { data: resultsData } = await db.from('test_results')
-      .select('*')
-      .eq('student_id', state.user.id);
+    // ✨ THIS IS THE FIX: If Admin, fetch ALL attendance. If Student, fetch only their own.
+    let attQuery = db.from('attendance').select('*');
+    if (state.user.role !== 'admin') {
+      attQuery = attQuery.eq('student_id', state.user.id);
+    }
+    const { data: att } = await attQuery;
+    attData = att || [];
+
+    // Progress is always only for the logged-in user
+    const { data: prog } = await db.from('student_progress').select('*').eq('student_id', state.user.id);
+    progData = prog || [];
+  }
+
+  // 5. Fetch Test Results and sync to LocalStorage
+  if (state.user) {
+    const { data: resultsData } = await db.from('test_results').select('*').eq('student_id', state.user.id);
       
-        if (resultsData && resultsData.length > 0) {
+    if (resultsData && resultsData.length > 0) {
       const localResults = {};
       resultsData.forEach(r => {
-        // Reconstruct questions from the global QUESTIONS object
-        const testData = QUESTIONS[r.test_id];
-        const reconstructedQuestions = testData ? testData.questions.map(q => ({
+        const testDataObj = QUESTIONS[r.test_id];
+        const reconstructedQuestions = testDataObj ? testDataObj.questions.map(q => ({
           ...q,
           chosen: r.answers && r.answers[q.id] !== undefined ? r.answers[q.id] : undefined
         })) : [];
 
         localResults[r.test_id] = {
           testId: r.test_id,
-          title: testData?.title || 'Mock Test',
-          subjectId: testData?.subjectId || '',
+          title: testDataObj?.title || 'Mock Test',
+          subjectId: testDataObj?.subjectId || '',
           score: r.score,
           total: r.total,
           accuracy: r.accuracy,
           timeTaken: r.time_taken,
           topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics,
           answers: typeof r.answers === 'string' ? JSON.parse(r.answers) : r.answers,
-          questions: reconstructedQuestions // <--- THIS WAS MISSING!
+          questions: reconstructedQuestions
         };
       });
       localStorage.setItem('bf_results', JSON.stringify(localResults));
     }
   }
 
+  // --- MAP DATA ---
   const completedTopicIds = new Set(progData.map(p => p.topic_id));
-
   const faculty = {};
   (facData || []).forEach(f => { faculty[f.id] = { ...f, facultyId: f.id }; });
 
@@ -232,7 +247,6 @@ async function fetchAppData() {
     const totalCount = subjAtt.length;
     const history = subjAtt.sort((a,b) => new Date(b.date) - new Date(a.date)).map(a => ({ date: a.date, status: a.status }));
 
-    // Map syllabus and check if completed
     let totalTopics = 0;
     let completedTopics = 0;
     
@@ -248,7 +262,6 @@ async function fetchAppData() {
         })
       }));
 
-    // Calculate real progress percentage
     const progress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
     return {
@@ -264,12 +277,6 @@ async function fetchAppData() {
       attendance: { present: presentCount, total: totalCount, history: history }
     };
   });
-
-      let adminStudents = [];
-  if (state.user && state.user.role === 'admin') {
-    adminStudents = await fetchAdminStudents();
-  }
-  return { faculty, subjects, adminStudents };
 
   return { faculty, subjects };
 }
@@ -353,5 +360,21 @@ async function dbUpdateFaculty(id, data) {
 }
 async function dbDeleteStudent(id) {
   const { error } = await db.from('profiles').delete().eq('id', id);
+  if (error) throw error;
+}
+
+async function dbAddAttendance(data) {
+  const { error } = await db.from('attendance').insert(data);
+  if (error) throw error;
+}
+
+async function dbAddModule(data) {
+  const { data: res, error } = await db.from('syllabus_modules').insert(data).select().single();
+  if (error) throw error;
+  return res;
+}
+
+async function dbAddTopic(data) {
+  const { error } = await db.from('syllabus_topics').insert(data);
   if (error) throw error;
 }

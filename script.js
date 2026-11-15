@@ -1398,10 +1398,52 @@ function adminFaculty(){
 
 function adminSubjects(){
   return '<div class="page-head"><div><h1>Subjects</h1><p class="sub">Manage subjects, faculty and syllabus.</p></div><button class="btn btn-primary btn-sm" data-add-subject>'+I.plus+' Add subject</button></div>'+
-    '<div class="table-wrap"><table class="data"><thead><tr><th>Subject</th><th>Code</th><th>Faculty</th><th>Modules</th><th>Students</th><th></th></tr></thead><tbody>'+
-      SUBJECTS.map(s=>'<tr><td>'+esc(s.name)+'</td><td>'+s.code+'</td><td>'+esc(getFaculty(s.facultyId).name)+'</td><td>'+s.syllabus.length+'</td><td>'+(30+Math.round(s.progress/3))+'</td><td><button class="btn btn-ghost btn-sm" data-edit>'+I.edit+'</button></td></tr>').join('')+
+    '<div class="table-wrap"><table class="data"><thead><tr><th>Subject</th><th>Code</th><th>Faculty</th><th>Modules</th><th>Actions</th></tr></thead><tbody>'+
+      SUBJECTS.map(s=>'<tr><td>'+esc(s.name)+'</td><td>'+s.code+'</td><td>'+esc(getFaculty(s.facultyId).name)+'</td><td>'+s.syllabus.length+'</td>'+
+      '<td><div class="row" style="gap:5px">'+
+        '<button class="btn btn-ghost btn-sm" onclick="openAddModule(\''+s.id+'\')">'+I.plus+' Module</button>'+
+        '<button class="btn btn-ghost btn-sm" data-edit>'+I.edit+'</button>'+
+      '</div></td></tr>').join('')+
     '</tbody></table></div>';
 }
+
+window.openAddModule = function(subjectId) {
+  showModal('<div class="modal"><h3>Add Syllabus Module</h3>'+
+    '<div class="field"><label>Module Title (e.g., Unit 1: Basics)</label><input class="input" id="mTitle"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="saveModuleBtn">Save & Add Topics</button></div></div>');
+  
+  $('[data-close]').onclick = closeModal;
+  $('#saveModuleBtn').onclick = async () => {
+    const title = $('#mTitle').value.trim();
+    if(!title) return toast('Title is required', 'error');
+    
+    try {
+      const newModule = await dbAddModule({ subject_id: subjectId, title: title, order_index: Date.now() });
+      closeModal();
+      toast('Module created! Now add topics.');
+      openAddTopic(newModule.id, subjectId);
+    } catch (err) { toast(err.message, 'error'); }
+  };
+};
+
+window.openAddTopic = function(moduleId, subjectId) {
+  showModal('<div class="modal"><h3>Add Topic</h3>'+
+    '<div class="field"><label>Topic Name</label><input class="input" id="tTitle"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" data-close>Done</button><button class="btn btn-primary" id="saveTopicBtn">Add Topic</button></div></div>');
+  
+  $('[data-close]').onclick = () => { closeModal(); refreshAppData(); };
+  $('#saveTopicBtn').onclick = async () => {
+    const title = $('#tTitle').value.trim();
+    if(!title) return toast('Title is required', 'error');
+    
+    try {
+      await dbAddTopic({ module_id: moduleId, title: title, order_index: Date.now() });
+      toast('Topic added! Add another or click Done.');
+      $('#tTitle').value = '';
+      await refreshAppData(); // Refresh silently in background
+    } catch (err) { toast(err.message, 'error'); }
+  };
+};
 
 function adminContent(){
   return '<div class="page-head"><div><h1>Content</h1><p class="sub">Manage notes and lectures.</p></div></div>'+
@@ -1419,13 +1461,103 @@ function adminTests(){
 }
 
 function adminAttendance(){
-  return '<div class="page-head"><div><h1>Attendance</h1><p class="sub">Overall student attendance across subjects.</p></div></div>'+
-    SUBJECTS.map(s=>{
-      const p = pct(s.attendance.present, s.attendance.total);
-      const fillStyle = 'width:'+p+'%'+(p>=85?';background:var(--secondary)':p<75?';background:var(--red-500)':'');
-      return '<div class="card mb-2"><div class="row-between"><div><div class="small" style="font-weight:600">'+esc(s.name)+'</div><div class="tiny muted">'+s.attendance.present+'/'+s.attendance.total+' classes</div></div><div class="row" style="gap:14px;min-width:200px"><div class="progress" style="flex:1;min-width:140px"><div class="progress-fill" style="'+fillStyle+'"></div></div><span class="small" style="font-weight:700">'+p+'%</span></div></div></div>';
-    }).join('');
+  const subjOptions = Object.values(SUBJECTS).map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  const studentRows = ADMIN_STUDENTS.map(st => `
+    <tr>
+      <td><div class="row" style="gap:9px"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;border-radius:8px">${initials(st.name)}</div>${esc(st.name)}</div></td>
+      <td>
+        <div class="row" style="gap:10px">
+          <label class="checkbox"><input type="radio" name="att_${st.id}" value="present" checked> Present</label>
+          <label class="checkbox"><input type="radio" name="att_${st.id}" value="absent"> Absent</label>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  return '<div class="page-head"><div><h1>Attendance</h1><p class="sub">Mark daily attendance for your students.</p></div></div>'+
+    '<div class="card mb-4">'+
+      '<div class="grid-2">'+
+        '<div class="field"><label>Subject</label><select class="input" id="attSubject">'+subjOptions+'</select></div>'+
+        '<div class="field"><label>Date</label><input class="input" id="attDate" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div>'+
+      '</div>'+
+      '<div class="table-wrap mt-3"><table class="data"><thead><tr><th>Student</th><th>Status</th></tr></thead><tbody>'+studentRows+'</tbody></table></div>'+
+      '<button class="btn btn-primary mt-3" id="saveAttendanceBtn">Save Attendance</button>'+
+    '</div>'+
+    '<div class="card"><h3 class="h3" style="font-size:1rem;margin-bottom:14px">Subject Attendance Overview</h3>'+
+      SUBJECTS.map(s=>{
+        const p = pct(s.attendance.present, s.attendance.total);
+        const fillStyle = 'width:'+p+'%'+(p>=85?';background:var(--secondary)':p<75?';background:var(--red-500)':'');
+        return '<div class="mb-3"><div class="row-between"><div><div class="small" style="font-weight:600">'+esc(s.name)+'</div><div class="tiny muted">'+s.attendance.present+'/'+s.attendance.total+' classes</div></div><div class="row" style="gap:14px;min-width:200px"><div class="progress" style="flex:1;min-width:140px"><div class="progress-fill" style="'+fillStyle+'"></div></div><span class="small" style="font-weight:700">'+p+'%</span></div></div></div>';
+      }).join('')+
+    '</div>';
 }
+
+// Add this to your global click listener in script.js
+document.addEventListener('click', async (e) => {
+  // 1. Admin Add Faculty/Subject
+  if (e.target.closest('[data-add-faculty]')) return openAddFaculty();
+  if (e.target.closest('[data-add-subject]')) return openAddSubject();
+
+  // 2. Admin Uploads (Lectures/Notes)
+  const uploadBtn = e.target.closest('[data-upload]');
+  if (uploadBtn) {
+    const type = uploadBtn.getAttribute('data-upload');
+    if (type === 'lecture') return openAddLecture();
+    if (type === 'note') return openAddNote();
+  }
+
+  // 3. Save Attendance Button
+  if (e.target.id === 'saveAttendanceBtn') {
+    const subjectId = $('#attSubject').value;
+    const date = $('#attDate').value;
+    const btn = e.target;
+    
+    if (!date) return toast('Please select a date', 'error');
+    
+    btn.disabled = true; btn.textContent = 'Saving...';
+    
+    try {
+      const records = ADMIN_STUDENTS.map(st => {
+        const status = document.querySelector(`input[name="att_${st.id}"]:checked`).value;
+        return { student_id: st.id, subject_id: subjectId, date: date, status: status };
+      });
+      
+      console.log("ATTENDANCE PAYLOAD:", records); // DEBUG LOG
+      
+      for (const record of records) {
+        await dbAddAttendance(record);
+      }
+      
+      toast('Attendance saved successfully!');
+      await refreshAppData();
+    } catch (err) {
+      console.error("ATTENDANCE ERROR:", err);
+      toast(err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save Attendance';
+    }
+    return;
+  }
+
+  // 4. Existing Topic Toggle (Syllabus Checkbox)
+  const topicEl = e.target.closest('[data-topic-toggle]');
+  if (topicEl) {
+    const topicId = topicEl.dataset.topicId;
+    const isCompleted = topicEl.dataset.completed === 'true';
+    
+    topicEl.style.opacity = '0.5';
+    
+    try {
+      await toggleTopicProgress(topicId, isCompleted);
+      const appData = await fetchAppData();
+      SUBJECTS = appData.subjects;
+      render();
+    } catch (err) {
+      toast(err.message, 'error');
+      topicEl.style.opacity = '1';
+    }
+    return;
+  }
+});
 
 function adminAnnouncements(){
   return '<div class="page-head"><div><h1>Announcements</h1><p class="sub">Broadcast messages to students and faculty.</p></div><button class="btn btn-primary btn-sm" data-new-announcement>'+I.plus+' New announcement</button></div>'+
