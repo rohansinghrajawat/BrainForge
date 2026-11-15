@@ -141,11 +141,9 @@ async function loadAppData() {
 /* --- Data layer --- */
 
 async function fetchAppData() {
-  // 1. Fetch Faculty
   const { data: facData, error: facErr } = await db.from('faculty').select('*');
   if (facErr) throw facErr;
 
-  // 2. Fetch Subjects with Deep Joins (Lectures, Notes, Syllabus)
   const { data: subData, error: subErr } = await db.from('subjects').select(`
     *,
     lectures (*),
@@ -154,28 +152,24 @@ async function fetchAppData() {
   `);
   if (subErr) throw subErr;
 
-  // 3. Fetch Mock Tests from DB
-  const { data: testData, error: testErr } = await db.from('mock_tests').select('*');
-  if (testErr) throw testErr;
-
-  console.log("TESTS FROM DB:", testData); 
-
-  // 4. Fetch Attendance for the logged-in user
+  const { data: testData } = await db.from('mock_tests').select('*');
+  
   let attData = [];
+  let progData = [];
+  
   if (state.user) {
-    const { data: att, error: attErr } = await db
-      .from('attendance')
-      .select('*')
-      .eq('student_id', state.user.id);
-    if (!attErr) attData = att || [];
+    const { data: att } = await db.from('attendance').select('*').eq('student_id', state.user.id);
+    attData = att || [];
+
+    const { data: prog } = await db.from('student_progress').select('*').eq('student_id', state.user.id);
+    progData = prog || [];
   }
 
-  // --- MAP DATA TO MATCH SCRIPT.JS EXPECTATIONS ---
-  
+  const completedTopicIds = new Set(progData.map(p => p.topic_id));
+
   const faculty = {};
   (facData || []).forEach(f => { faculty[f.id] = { ...f, facultyId: f.id }; });
 
-  // Inject DB tests into the global QUESTIONS object so the UI picks them up
   if (typeof QUESTIONS !== 'undefined' && testData) {
     testData.forEach(t => {
       QUESTIONS[t.id] = {
@@ -188,35 +182,57 @@ async function fetchAppData() {
   }
 
   const subjects = (subData || []).map(s => {
-    // Map Attendance
     const subjAtt = attData.filter(a => a.subject_id === s.id);
     const presentCount = subjAtt.filter(a => a.status === 'present').length;
     const totalCount = subjAtt.length;
-    const history = subjAtt
-      .sort((a,b) => new Date(b.date) - new Date(a.date))
-      .map(a => ({ date: a.date, status: a.status }));
+    const history = subjAtt.sort((a,b) => new Date(b.date) - new Date(a.date)).map(a => ({ date: a.date, status: a.status }));
 
-    // Map Syllabus
+    // Map syllabus and check if completed
+    let totalTopics = 0;
+    let completedTopics = 0;
+    
     const syllabus = (s.syllabus_modules || [])
       .sort((a,b) => a.order_index - b.order_index)
       .map(m => ({
         title: m.title,
-        topics: (m.syllabus_topics || []).sort((a,b) => a.order_index - b.order_index).map(t => t.title)
+        topics: (m.syllabus_topics || []).sort((a,b) => a.order_index - b.order_index).map(t => {
+          totalTopics++;
+          const isCompleted = completedTopicIds.has(t.id);
+          if (isCompleted) completedTopics++;
+          return { id: t.id, title: t.title, completed: isCompleted };
+        })
       }));
+
+    // Calculate real progress percentage
+    const progress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
     return {
       ...s,
-      facultyId: s.faculty_id,      // snake_case to camelCase
+      facultyId: s.faculty_id,
       nextTest:  s.next_test,
       hue:       s.hue ?? 215,
       credits:   s.credits ?? 0,
-      progress:  s.progress ?? 0,   // (we'll calculate real progress later)
+      progress:  progress,
       syllabus:  syllabus,
-      lectures:  (s.lectures || []).map(l => ({ ...l, watched: false })), // default false
+      lectures:  (s.lectures || []).map(l => ({ ...l, watched: false })),
       notes:     s.notes || [],
       attendance: { present: presentCount, total: totalCount, history: history }
     };
   });
 
   return { faculty, subjects };
+}
+
+// Add this new function at the bottom of auth.js
+async function toggleTopicProgress(topicId, currentlyCompleted) {
+  if (currentlyCompleted) {
+    const { error } = await db.from('student_progress')
+      .delete()
+      .match({ student_id: state.user.id, topic_id: topicId });
+    if (error) throw error;
+  } else {
+    const { error } = await db.from('student_progress')
+      .insert({ student_id: state.user.id, topic_id: topicId });
+    if (error) throw error;
+  }
 }

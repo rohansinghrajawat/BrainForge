@@ -760,7 +760,12 @@ function pageSyllabus(){
   return '<div class="page-head"><div><h1>Syllabus Tracker</h1><p class="sub">See every module and topic across your subjects in one place.</p></div></div>'+
     SUBJECTS.map(s=>'<div class="card mb-3"><div class="row-between mb-3"><div><h3 class="h3" style="font-size:1.05rem">'+esc(s.name)+'</h3><div class="tiny muted mt-1">'+s.syllabus.length+' modules · '+s.progress+'% complete</div></div><a href="#/subject/'+s.id+'" class="btn btn-ghost btn-sm">Open '+I.arrowRight+'</a></div>'+
       '<div class="progress mb-2"><div class="progress-fill" style="width:'+s.progress+'%"></div></div>'+
-      s.syllabus.map((m,i)=>'<div class="module '+(i===0?'open':'')+'"><div class="module-head" data-module-toggle><div class="module-num">'+(i+1)+'</div><div class="t"><h4>'+esc(m.title)+'</h4><div class="s">'+m.topics.length+' topics</div></div><span class="chev">'+I.chevronDown+'</span></div><div class="module-body"><ul>'+m.topics.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul></div></div>').join('')+
+      s.syllabus.map((m,i)=>'<div class="module '+(i===0?'open':'')+'"><div class="module-head" data-module-toggle><div class="module-num">'+(i+1)+'</div><div class="t"><h4>'+esc(m.title)+'</h4><div class="s">'+m.topics.length+' topics</div></div><span class="chev">'+I.chevronDown+'</span></div><div class="module-body"><ul>'+
+        m.topics.map(t=>'<li data-topic-toggle data-topic-id="'+t.id+'" data-completed="'+t.completed+'" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:6px 0;">'+
+          '<span style="color:'+(t.completed?'var(--secondary)':'var(--border-strong)')+'; display:flex;">'+I.check+'</span>'+
+          '<span class="small" style="'+(t.completed?'text-decoration:line-through; opacity:0.6;':'')+'">'+esc(t.title)+'</span>'+
+        '</li>').join('')+
+      '</ul></div></div>').join('')+
     '</div>').join('');
 }
 
@@ -872,7 +877,12 @@ function subjectFaculty(fac){
 function subjectSyllabus(s){
   return '<div class="card"><div class="row-between mb-3"><h3 class="h3" style="font-size:1.05rem">Syllabus · '+s.syllabus.length+' modules</h3><span class="badge badge-blue">'+s.progress+'% complete</span></div>'+
     '<div class="progress mb-3"><div class="progress-fill" style="width:'+s.progress+'%"></div></div>'+
-    s.syllabus.map((m,i)=>'<div class="module '+(i===0?'open':'')+'"><div class="module-head" data-module-toggle><div class="module-num">'+(i+1)+'</div><div class="t"><h4>'+esc(m.title)+'</h4><div class="s">'+m.topics.length+' topics</div></div><span class="chev">'+I.chevronDown+'</span></div><div class="module-body"><ul>'+m.topics.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul></div></div>').join('')+
+    s.syllabus.map((m,i)=>'<div class="module '+(i===0?'open':'')+'"><div class="module-head" data-module-toggle><div class="module-num">'+(i+1)+'</div><div class="t"><h4>'+esc(m.title)+'</h4><div class="s">'+m.topics.length+' topics</div></div><span class="chev">'+I.chevronDown+'</span></div><div class="module-body"><ul>'+
+      m.topics.map(t=>'<li data-topic-toggle data-topic-id="'+t.id+'" data-completed="'+t.completed+'" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:6px 0;">'+
+        '<span style="color:'+(t.completed?'var(--secondary)':'var(--border-strong)')+'; display:flex;">'+I.check+'</span>'+
+        '<span class="small" style="'+(t.completed?'text-decoration:line-through; opacity:0.6;':'')+'">'+esc(t.title)+'</span>'+
+      '</li>').join('')+
+    '</ul></div></div>').join('')+
   '</div>';
 }
 
@@ -1439,6 +1449,30 @@ function initGlobalHandlers(){
   $$('[data-module-toggle]').forEach(el=>{
     el.addEventListener('click', ()=>el.closest('.module').classList.toggle('open'));
   });
+
+
+
+  document.addEventListener('click', async (e) => {
+  const topicEl = e.target.closest('[data-topic-toggle]');
+  if (topicEl) {
+    const topicId = topicEl.dataset.topicId;
+    const isCompleted = topicEl.dataset.completed === 'true';
+    
+    // Optimistic UI update (makes it feel instant)
+    topicEl.style.opacity = '0.5';
+    
+    try {
+      await toggleTopicProgress(topicId, isCompleted);
+      // Reload data and re-render
+      const appData = await fetchAppData();
+      SUBJECTS = appData.subjects;
+      render();
+    } catch (err) {
+      toast(err.message, 'error');
+      topicEl.style.opacity = '1'; // revert on error
+    }
+  }
+});
 
   // Settings switches
   $$('[data-switch-theme]').forEach(btn=>{
