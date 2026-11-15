@@ -2,7 +2,7 @@
 
 
 const I = {
-  logo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 9.2 8 10 4.6-.8 8-5 8-10V6l-8-4z"/><path d="m9 12 2 2 4-4"/></svg>',
+    logo:'<img src="logo.png" style="width:100%;height:100%;object-fit:contain;" alt="BrainForge">',
   dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
   video:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3z"/></svg>',
   note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>',
@@ -239,7 +239,7 @@ function renderLanding(){
 
 function landingNav(){
   return '<header class="nav"><div class="nav-inner">'+
-    '<a href="#/" class="logo"><span class="logo-mark">B</span>BrainForge</a>'+
+    '<a href="#/" class="logo"><span class="logo-mark" style="background:transparent"><img src="logo.png" style="width:100%;height:100%;object-fit:contain;" alt="BrainForge"></span>BrainForge</a>'+
     '<nav class="nav-links"><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>'+
     '<div class="nav-actions">'+
       '<button class="theme-toggle" aria-label="Toggle theme" data-theme-toggle>'+(state.theme==='light'?I.moon:I.sun)+'</button>'+
@@ -381,7 +381,7 @@ function finalCTA(){
 function landingFooter(){
   return '<footer class="footer"><div class="container">'+
     '<div class="footer-grid">'+
-      '<div><a href="#/" class="logo mb-2"><span class="logo-mark">B</span>BrainForge</a>'+
+     '<div><a href="#/" class="logo mb-2"><span class="logo-mark" style="background:transparent"><img src="logo.png" style="width:100%;height:100%;object-fit:contain;" alt="BrainForge"></span>BrainForge</a>'+
         '<p class="small muted" style="max-width:280px">A calm, professional learning platform for students — lectures, notes, syllabus, tests, and insights in one place.</p>'+
         '<div class="footer-contact mt-3">'+I.mail+' hello@brainforge.edu<br>'+I.phone+' +91 90000 00000</div>'+
       '</div>'+
@@ -402,13 +402,13 @@ function renderAuth(page){
   const title = isAdminPage ? 'Administrator Login' : isSignup ? 'Create your account' : 'Welcome back';
   const subtitle = isAdminPage ? 'Sign in to the BrainForge admin console.' : isSignup ? 'Get started with your free BrainForge account.' : 'Sign in to continue your learning journey.';
   return '<div class="auth-wrap"><aside class="auth-aside">'+
-    '<a href="#/" class="logo" style="color:#fff"><span class="logo-mark">B</span>BrainForge</a>'+
+    '<a href="#/" class="logo" style="color:#fff"><span class="logo-mark" style="background:transparent"><img src="logo.png" style="width:100%;height:100%;object-fit:contain;" alt="BrainForge"></span>BrainForge</a>'+
     '<h2>'+(isAdminPage ? 'Administer with clarity.' : isSignup ? 'Build a smarter semester.' : 'Welcome back to focus.')+'</h2>'+
     '<p>'+(isAdminPage ? 'Manage students, faculty, subjects, tests and announcements from a single, focused console.' : 'A calm, professional workspace that keeps your lectures, notes, syllabus and progress in one place.')+'</p>'+
     '<ul class="auth-features">'+
       (isAdminPage
         ? ['Manage students & faculty','Publish announcements','Track engagement and analytics']
-        : ['8 subjects, one dashboard','Timed mock tests & analysis','Ask subject-tagged doubts','Track attendance & progress']
+        : ['Multiple subjects, one dashboard','Timed mock tests & analysis','Ask subject-tagged doubts','Track attendance & progress']
       ).map(f=>'<li><span class="tick">'+I.check+'</span>'+f+'</li>').join('')+
     '</ul>'+
     '<div class="mt-4 small" style="color:rgba(255,255,255,.7)">'+(isAdminPage?'Secure admin access · BrainForge':'Trusted by 20+ campuses')+'</div>'+
@@ -589,7 +589,7 @@ function initResetPasswordForm(){
 function studentShell(active, content){
   const u = currentUser();
   return '<div class="app-shell">'+
-    '<aside class="sidebar" id="sidebar"><div class="sidebar-head"><a href="#/dashboard" class="logo"><span class="logo-mark">B</span>BrainForge</a></div>'+
+    '<aside class="sidebar" id="sidebar"><div class="sidebar-head"><a href="#/dashboard" class="logo"><span class="logo-mark" style="background:transparent"><img src="logo.png" style="width:100%;height:100%;object-fit:contain;" alt="BrainForge"></span>BrainForge</a></div>'+
       '<nav class="sidebar-nav">'+
         '<div class="nav-section-label">Learning</div>'+
         navItem('dashboard','Dashboard',active,I.dashboard)+
@@ -626,7 +626,7 @@ function studentShell(active, content){
 function adminShell(active, content){
   const u = currentUser();
   return '<div class="app-shell">'+
-    '<aside class="sidebar" id="sidebar"><div class="sidebar-head"><a href="#/admin" class="logo"><span class="logo-mark" style="background:linear-gradient(135deg,#059669,#2563eb)">B</span>BrainForge</a><div class="tiny muted mt-1" style="padding-left:2px">Admin Console</div></div>'+
+    '<aside class="sidebar" id="sidebar"><div class="sidebar-head"><a href="#/admin" class="logo"><span class="logo-mark" style="background:transparent"><img src="logo.png" style="width:100%;height:100%;object-fit:contain;" alt="BrainForge"></span>BrainForge</a><div class="tiny muted mt-1" style="padding-left:2px">Admin Console</div></div>'+
       '<nav class="sidebar-nav">'+
         '<div class="nav-section-label">Overview</div>'+
         navItemAdmin('admin','Overview',active,I.dashboard)+
