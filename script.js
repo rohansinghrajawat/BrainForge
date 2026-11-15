@@ -1170,13 +1170,15 @@ function confirmSubmit(testId){
     'You have answered '+answered+' of '+q.questions.length+' questions.'+(unanswered>0?(' '+unanswered+' questions are unanswered.'):'')+' Once submitted, you cannot change your answers.',
     ()=>submitTest(testId), true);
 }
-function submitTest(testId){
+async function submitTest(testId){
   const s = getTestState(testId);
   const q = QUESTIONS[testId];
   if(!q) return;
+  
   const answers = s.answers || {};
   let correct = 0, wrong = 0, unattempted = 0;
   const topicMap = {};
+  
   q.questions.forEach(question=>{
     if(!topicMap[question.topic]) topicMap[question.topic] = { correct:0, total:0 };
     topicMap[question.topic].total++;
@@ -1185,10 +1187,12 @@ function submitTest(testId){
     else if(ans === question.correct){ correct++; topicMap[question.topic].correct++; }
     else { wrong++; }
   });
+  
   const total = q.questions.length;
   const attempted = total - unattempted;
   const accuracy = attempted ? Math.round(correct/attempted*100) : 0;
   const elapsed = Math.max(0, q.duration*60 - (s.timeLeft || 0));
+  
   const result = {
     testId, title:q.title, subjectId:q.subjectId,
     score:correct, total, correct, wrong, unattempted,
@@ -1199,10 +1203,35 @@ function submitTest(testId){
     questions: q.questions.map(question=>({ id:question.id, text:question.text, options:question.options, correct:question.correct, topic:question.topic, chosen: answers[question.id] })),
     submittedAt: Date.now()
   };
+
+  // 1. Save to LocalStorage (Instant UI update)
   saveResult(testId, result);
+
+  // 2. Save to Supabase
+  try {
+    const { error } = await db.from('test_results').insert({
+      student_id: state.user.id,
+      test_id: testId,
+      score: result.score,
+      total: result.total,
+      accuracy: result.accuracy,
+      time_taken: result.timeTaken,
+      topics: result.topics,
+      answers: result.answers
+    });
+    
+    // If Supabase rejects it, throw the error so we can see it
+    if (error) throw error;
+    
+  } catch (err) {
+    console.error("🚨 DB INSERT FAILED:", err);
+    alert("Database Error: " + err.message); // Force an alert so you see it
+  }
+
   localStorage.removeItem('bf_test_'+testId);
   if(state.testTimer){ clearInterval(state.testTimer); state.testTimer = null; }
   state.activeTestId = null;
+  
   toast('Test submitted successfully.');
   location.hash = '#/analysis/'+testId;
 }

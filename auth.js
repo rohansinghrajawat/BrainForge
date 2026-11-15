@@ -157,12 +157,37 @@ async function fetchAppData() {
   let attData = [];
   let progData = [];
   
+   // Fetch Test Results from DB and sync to LocalStorage
   if (state.user) {
-    const { data: att } = await db.from('attendance').select('*').eq('student_id', state.user.id);
-    attData = att || [];
+    const { data: resultsData } = await db.from('test_results')
+      .select('*')
+      .eq('student_id', state.user.id);
+      
+        if (resultsData && resultsData.length > 0) {
+      const localResults = {};
+      resultsData.forEach(r => {
+        // Reconstruct questions from the global QUESTIONS object
+        const testData = QUESTIONS[r.test_id];
+        const reconstructedQuestions = testData ? testData.questions.map(q => ({
+          ...q,
+          chosen: r.answers && r.answers[q.id] !== undefined ? r.answers[q.id] : undefined
+        })) : [];
 
-    const { data: prog } = await db.from('student_progress').select('*').eq('student_id', state.user.id);
-    progData = prog || [];
+        localResults[r.test_id] = {
+          testId: r.test_id,
+          title: testData?.title || 'Mock Test',
+          subjectId: testData?.subjectId || '',
+          score: r.score,
+          total: r.total,
+          accuracy: r.accuracy,
+          timeTaken: r.time_taken,
+          topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics,
+          answers: typeof r.answers === 'string' ? JSON.parse(r.answers) : r.answers,
+          questions: reconstructedQuestions // <--- THIS WAS MISSING!
+        };
+      });
+      localStorage.setItem('bf_results', JSON.stringify(localResults));
+    }
   }
 
   const completedTopicIds = new Set(progData.map(p => p.topic_id));
