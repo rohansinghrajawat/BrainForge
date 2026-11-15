@@ -911,21 +911,24 @@ function subjectLectures(s){
   const ytId = getYouTubeId(current.video_url);
   
   const videoHtml = ytId 
-    ? `<iframe width="100%" height="100%" style="aspect-ratio:16/9;border:none;" src="https://www.youtube.com/embed/${ytId}?autoplay=0" allowfullscreen></iframe>`
+    ? `<iframe id="main-lecture-iframe" width="100%" height="100%" style="aspect-ratio:16/9;border:none;" src="https://www.youtube.com/embed/${ytId}?autoplay=0" allowfullscreen></iframe>`
     : `<div class="video-frame" style="border-radius:0"><div class="play">${I.play}</div><div class="strip"><div class="bar"></div><span class="tiny" style="color:#fff;opacity:.85">Video player (demo)</span></div></div>`;
 
   return '<div class="grid-2" style="grid-template-columns:1.4fr 1fr;gap:20px">'+
     '<div class="card card-flat" style="padding:0;overflow:hidden">'+
-      '<div style="background:#000; width:100%;">'+videoHtml+'</div>'+
-      '<div style="padding:18px"><h3 class="h3" style="font-size:1.05rem">'+esc(current.title)+'</h3><div class="tiny muted mt-1">'+esc(current.duration||'')+' · '+esc(current.date||'')+' · '+esc(s.name)+'</div>'+
-        '<div class="row mt-3" style="gap:8px"><a href="'+esc(current.video_url||'#')+'" target="_blank" class="btn btn-ghost btn-sm">'+I.play+' Open in YouTube</a></div>'+
+      '<div style="background:#000; width:100%;" id="video-container">'+videoHtml+'</div>'+
+      '<div style="padding:18px">'+
+        '<h3 class="h3" style="font-size:1.05rem" id="current-lecture-title">'+esc(current.title)+'</h3>'+
+        '<div class="tiny muted mt-1" id="current-lecture-meta">'+esc(current.duration||'')+' · '+esc(current.date||'')+' · '+esc(s.name)+'</div>'+
+        '<div class="row mt-3" style="gap:8px"><a href="'+esc(current.video_url||'#')+'" target="_blank" class="btn btn-ghost btn-sm" id="current-lecture-link">'+I.play+' Open in YouTube</a></div>'+
       '</div>'+
     '</div>'+
     '<div class="card"><h3 class="h3" style="font-size:1.05rem;margin-bottom:14px">All lectures</h3>'+
-      s.lectures.map((l, idx)=>'<div class="list-item" style="margin-bottom:8px;padding:10px; '+(idx===0?'border:1px solid var(--primary);':'')+'"><div class="li-icon '+(l.watched?'green':'')+'" style="width:34px;height:34px">'+I.play+'</div><div class="li-info"><div class="t small">'+esc(l.title)+'</div><div class="s">'+esc(l.duration||'')+' · '+esc(l.date||'')+'</div></div></div>').join('')+
+      s.lectures.map((l, idx)=>'<div class="list-item lecture-item" data-url="'+esc(l.video_url)+'" data-title="'+esc(l.title)+'" data-duration="'+esc(l.duration||'')+'" data-date="'+esc(l.date||'')+'" style="cursor:pointer; margin-bottom:8px;padding:10px; border:'+(idx===0?'1px solid var(--primary)':'1px solid transparent')+'"><div class="li-icon '+(l.watched?'green':'')+'" style="width:34px;height:34px">'+I.play+'</div><div class="li-info"><div class="t small">'+esc(l.title)+'</div><div class="s">'+esc(l.duration||'')+' · '+esc(l.date||'')+'</div></div></div>').join('')+
     '</div>'+
   '</div>';
 }
+
 function subjectTests(s){
   const tests = Object.entries(QUESTIONS).filter(([id,q])=>q.subjectId===s.id);
   const results = getResults();
@@ -1569,6 +1572,36 @@ document.addEventListener('click', async (e) => {
     }
     return;
   }
+
+    // Handle switching lectures
+  const lectureItem = e.target.closest('.lecture-item');
+  if (lectureItem) {
+    // 1. Visually highlight the selected lecture
+    document.querySelectorAll('.lecture-item').forEach(el => el.style.border = '1px solid transparent');
+    lectureItem.style.border = '1px solid var(--primary)';
+    
+    // 2. Get the data from the clicked element
+    const url = lectureItem.getAttribute('data-url');
+    const title = lectureItem.getAttribute('data-title');
+    const duration = lectureItem.getAttribute('data-duration');
+    const date = lectureItem.getAttribute('data-date');
+    
+    // 3. Update the Video Player
+    const ytId = getYouTubeId(url);
+    const container = document.getElementById('video-container');
+    
+    if (ytId) {
+      container.innerHTML = `<iframe id="main-lecture-iframe" width="100%" height="100%" style="aspect-ratio:16/9;border:none;" src="https://www.youtube.com/embed/${ytId}?autoplay=1" allowfullscreen></iframe>`;
+    } else {
+      container.innerHTML = `<div class="video-frame" style="border-radius:0"><div class="play">${I.play}</div></div>`;
+    }
+    
+    // 4. Update the Text and Link below the video
+    document.getElementById('current-lecture-title').textContent = title;
+    document.getElementById('current-lecture-meta').textContent = duration + ' · ' + date;
+    document.getElementById('current-lecture-link').href = url;
+    return;
+  }
 });
 
 function adminAnnouncements(){
@@ -1702,8 +1735,8 @@ function initGlobalHandlers(){
   $$('[data-edit-profile]').forEach(b=>b.addEventListener('click', ()=>toast('Editing profile (demo)','info')));
 
   // Play / view / download buttons on non-test pages
-  $$('[data-play]').forEach(b=>b.addEventListener('click', ()=>toast('Playing lecture (demo)','info')));
-  $$('[data-view]').forEach(b=>b.addEventListener('click', ()=>toast('Opening note (demo)','info')));
+  $$('[data-play]').forEach(b=>b.addEventListener('click', ()=>toast('Click Open Subject >> Lecture','info')));
+  $$('[data-view]').forEach(b=>b.addEventListener('click', ()=>toast('Click Open Subject >> Notes','info')));
   $$('[data-download]').forEach(b=>b.addEventListener('click', ()=>toast('Download started (demo)','success')));
   $$('[data-mark-watched]').forEach(b=>b.addEventListener('click', ()=>toast('Marked as watched','success')));
 
